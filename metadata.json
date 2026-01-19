@@ -1,0 +1,8 @@
+{
+  "name": "Event Manager Pro",
+  "description": "A high-end event management dashboard with real-time tracking, AI-powered task generation, and budget analytics.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
