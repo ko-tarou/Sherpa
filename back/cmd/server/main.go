@@ -63,19 +63,19 @@ func main() {
 	// APIルート
 	api := r.Group("/api")
 	{
+		// タスク関連（より具体的なルートを先に定義）
+		api.GET("/events/:id/tasks", handlers.GetTasks)
+		api.POST("/events/:id/tasks", handlers.CreateTask)
+		api.PUT("/tasks/:id", handlers.UpdateTask)
+		api.DELETE("/tasks/:id", handlers.DeleteTask)
+		api.POST("/tasks/generate", handlers.GenerateTasks)
+
 		// イベント関連
 		api.GET("/events", handlers.GetEvents)
 		api.GET("/events/:id", handlers.GetEvent)
 		api.POST("/events", handlers.CreateEvent)
 		api.PUT("/events/:id", handlers.UpdateEvent)
 		api.DELETE("/events/:id", handlers.DeleteEvent)
-
-		// タスク関連
-		api.GET("/events/:eventId/tasks", handlers.GetTasks)
-		api.POST("/events/:eventId/tasks", handlers.CreateTask)
-		api.PUT("/tasks/:id", handlers.UpdateTask)
-		api.DELETE("/tasks/:id", handlers.DeleteTask)
-		api.POST("/tasks/generate", handlers.GenerateTasks)
 	}
 
 	// サーバー起動

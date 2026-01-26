@@ -1,13 +1,16 @@
 
 import React from 'react';
-import { NavItemType } from '../types';
+import { NavItemType, Event } from '../types';
 
 interface SidebarProps {
   activeTab: NavItemType;
   setActiveTab: (tab: NavItemType) => void;
+  events: Event[];
+  selectedEventId: number | null;
+  onEventSelect: (eventId: number) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect }) => {
   const navItems = [
     { type: NavItemType.DASHBOARD, label: 'ダッシュボード', icon: 'grid_view' },
     { type: NavItemType.TASKS, label: 'タスク', icon: 'assignment' },
@@ -51,6 +54,28 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             <span>新規イベント作成</span>
           </button>
         </div>
+
+        {/* イベント選択 */}
+        {events.length > 0 && (
+          <div className="px-4 mt-6">
+            <p className="text-xs text-gray-500 font-bold mb-2 px-4">イベント選択</p>
+            <div className="space-y-1">
+              {events.map((event) => (
+                <button
+                  key={event.id}
+                  onClick={() => onEventSelect(event.id)}
+                  className={`w-full text-left px-4 py-2 rounded-lg transition-all ${
+                    selectedEventId === event.id
+                      ? 'bg-primary text-white'
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <p className="text-sm font-medium truncate">{event.title}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="flex flex-col gap-4 px-6 border-t border-white/5 pt-8">

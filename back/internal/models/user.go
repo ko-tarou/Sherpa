@@ -17,12 +17,12 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
-	OrganizationMembers []OrganizationMember `json:"organization_members,omitempty"`
-	EventStaffs         []EventStaff         `json:"event_staffs,omitempty"`
-	ChannelMembers      []ChannelMember      `json:"channel_members,omitempty"`
-	Messages            []Message            `json:"messages,omitempty"`
-	Tasks               []Task               `json:"tasks,omitempty"`
-	EventParticipants   []EventParticipant  `json:"event_participants,omitempty"`
+	OrganizationMembers []OrganizationMember `gorm:"foreignKey:UserID" json:"organization_members,omitempty"`
+	EventStaffs         []EventStaff         `gorm:"foreignKey:UserID" json:"event_staffs,omitempty"`
+	ChannelMembers      []ChannelMember      `gorm:"foreignKey:UserID" json:"channel_members,omitempty"`
+	Messages            []Message            `gorm:"foreignKey:UserID" json:"messages,omitempty"`
+	Tasks               []Task               `gorm:"foreignKey:AssigneeID" json:"tasks,omitempty"`
+	EventParticipants   []EventParticipant   `gorm:"foreignKey:UserID" json:"event_participants,omitempty"`
 }
 
 // TableName テーブル名を指定

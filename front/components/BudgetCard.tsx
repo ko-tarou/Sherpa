@@ -1,13 +1,15 @@
 
 import React from 'react';
-import { Budget } from '../types';
 
 interface BudgetCardProps {
-  budget: Budget;
+  budget: {
+    planned: number;
+    actual: number;
+  };
 }
 
 const BudgetCard: React.FC<BudgetCardProps> = ({ budget }) => {
-  const percentage = Math.round((budget.actual / budget.planned) * 100);
+  const percentage = budget.planned > 0 ? Math.round((budget.actual / budget.planned) * 100) : 0;
   const remaining = budget.planned - budget.actual;
   
   // SVG calculation for circular progress

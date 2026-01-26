@@ -13,7 +13,7 @@ import (
 
 // GetTasks タスク一覧を取得
 func GetTasks(c *gin.Context) {
-	eventID, err := strconv.ParseUint(c.Param("eventId"), 10, 32)
+	eventID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
 		return
@@ -32,7 +32,7 @@ func GetTasks(c *gin.Context) {
 
 // CreateTask タスクを作成
 func CreateTask(c *gin.Context) {
-	eventID, err := strconv.ParseUint(c.Param("eventId"), 10, 32)
+	eventID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
 		return

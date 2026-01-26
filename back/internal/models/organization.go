@@ -16,8 +16,8 @@ type Organization struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
-	Members []OrganizationMember `json:"members,omitempty"`
-	Events  []Event             `json:"events,omitempty"`
+	Members []OrganizationMember `gorm:"foreignKey:OrganizationID" json:"members,omitempty"`
+	Events  []Event              `gorm:"foreignKey:OrganizationID" json:"events,omitempty"`
 }
 
 // TableName テーブル名を指定

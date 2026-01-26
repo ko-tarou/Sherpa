@@ -16,15 +16,48 @@ var DB *gorm.DB
 
 // Connect データベースに接続
 func Connect() error {
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_SSLMODE"),
-	)
+	dbHost := os.Getenv("DB_HOST")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+
+	// デフォルト値の設定
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	if dbUser == "" {
+		dbUser = "kota"
+	}
+	if dbName == "" {
+		dbName = "sherpa"
+	}
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+	if dbSSLMode == "" {
+		dbSSLMode = "disable"
+	}
+
+	// デバッグ用ログ
+	log.Printf("Connecting to database: host=%s user=%s dbname=%s port=%s", dbHost, dbUser, dbName, dbPort)
+
+	// DSN構築（パスワードが空の場合も正しく処理）
+	var dsn string
+	if dbPassword != "" {
+		dsn = fmt.Sprintf(
+			"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+			dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode,
+		)
+	} else {
+		dsn = fmt.Sprintf(
+			"host=%s user=%s dbname=%s port=%s sslmode=%s",
+			dbHost, dbUser, dbName, dbPort, dbSSLMode,
+		)
+	}
+	
+	log.Printf("DSN: %s", dsn)
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{

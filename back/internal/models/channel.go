@@ -19,8 +19,8 @@ type Channel struct {
 
 	// Relations
 	Event          Event           `gorm:"foreignKey:EventID" json:"event,omitempty"`
-	ChannelMembers []ChannelMember `json:"channel_members,omitempty"`
-	Messages       []Message       `json:"messages,omitempty"`
+	ChannelMembers []ChannelMember `gorm:"foreignKey:ChannelID" json:"channel_members,omitempty"`
+	Messages       []Message       `gorm:"foreignKey:ChannelID" json:"messages,omitempty"`
 }
 
 // TableName テーブル名を指定

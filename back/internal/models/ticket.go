@@ -17,8 +17,8 @@ type Ticket struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
-	Event           Event             `gorm:"foreignKey:EventID" json:"event,omitempty"`
-	EventParticipants []EventParticipant `json:"event_participants,omitempty"`
+	Event             Event             `gorm:"foreignKey:EventID" json:"event,omitempty"`
+	EventParticipants []EventParticipant `gorm:"foreignKey:TicketID" json:"event_participants,omitempty"`
 }
 
 // TableName テーブル名を指定

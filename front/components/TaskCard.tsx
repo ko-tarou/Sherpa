@@ -2,14 +2,16 @@
 import React, { useState } from 'react';
 import { Task } from '../types';
 import { apiClient } from '../services/api';
+import { formatDeadline } from '../utils/dateUtils';
 
 interface TaskCardProps {
   tasks: Task[];
   eventTitle: string;
-  onTasksUpdate: (newTasks: Task[]) => void;
+  eventId: number;
+  loading?: boolean;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, onTasksUpdate }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAiGeneration = async () => {
@@ -17,14 +19,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, onTasksUpdate })
     try {
       const response = await apiClient.generateTasks(eventTitle);
       if (response.tasks && response.tasks.length > 0) {
-        const newTasks: Task[] = response.tasks.map((t: any, index: number) => ({
-          id: `ai-${Date.now()}-${index}`,
-          title: t.title,
-          deadline: t.deadline,
-          isPriority: true,
-          completed: false
-        }));
-        onTasksUpdate([...newTasks, ...tasks].slice(0, 6));
+        // タスクをAPI経由で作成
+        for (const taskSuggestion of response.tasks) {
+          const deadline = new Date();
+          deadline.setDate(deadline.getDate() + 7);
+          await apiClient.createTask(eventId, {
+            title: taskSuggestion.title,
+            deadline: deadline.toISOString(),
+            status: 'todo',
+            is_ai_generated: true,
+          });
+        }
+        // ページをリロードしてタスクを再取得
+        window.location.reload();
       } else {
         alert('AIタスク生成に失敗しました。APIキーが設定されていない可能性があります。');
       }
@@ -57,7 +64,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, onTasksUpdate })
       </div>
       
       <div className="space-y-4">
-        {tasks.map((task) => (
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">読み込み中...</div>
+        ) : tasks.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">タスクがありません</div>
+        ) : (
+          tasks.map((task) => (
           <div 
             key={task.id}
             className="flex items-center gap-5 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-all cursor-pointer group"
@@ -68,14 +80,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, onTasksUpdate })
               </span>
             </div>
             <div className="flex-1">
-              <p className="text-lg font-bold text-white">{task.title}</p>
-              <p className={`text-sm font-bold mt-1 ${task.deadline.includes('本日') ? 'text-primary' : 'text-gray-500'}`}>
-                {task.deadline}
+              <p className={`text-lg font-bold ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-white'}`}>
+                {task.title}
+              </p>
+              <p className={`text-sm font-bold mt-1 ${formatDeadline(task.deadline).includes('本日') ? 'text-primary' : 'text-gray-500'}`}>
+                {formatDeadline(task.deadline)}
               </p>
             </div>
             <span className="material-symbols-outlined text-gray-700">chevron_right</span>
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

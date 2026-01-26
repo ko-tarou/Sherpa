@@ -32,12 +32,12 @@ type Event struct {
 
 	// Relations
 	Organization   Organization     `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`
-	Tasks          []Task           `json:"tasks,omitempty"`
-	Budgets        []Budget         `json:"budgets,omitempty"`
-	Meetings       []Meeting        `json:"meetings,omitempty"`
-	EventStaffs    []EventStaff     `json:"event_staffs,omitempty"`
-	Tickets        []Ticket         `json:"tickets,omitempty"`
-	Channels       []Channel        `json:"channels,omitempty"`
+	Tasks          []Task           `gorm:"foreignKey:EventID" json:"tasks,omitempty"`
+	Budgets        []Budget         `gorm:"foreignKey:EventID" json:"budgets,omitempty"`
+	Meetings       []Meeting        `gorm:"foreignKey:EventID" json:"meetings,omitempty"`
+	EventStaffs    []EventStaff     `gorm:"foreignKey:EventID" json:"event_staffs,omitempty"`
+	Tickets        []Ticket         `gorm:"foreignKey:EventID" json:"tickets,omitempty"`
+	Channels       []Channel        `gorm:"foreignKey:EventID" json:"channels,omitempty"`
 }
 
 // TableName テーブル名を指定
