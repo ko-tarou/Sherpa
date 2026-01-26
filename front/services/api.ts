@@ -97,4 +97,15 @@ export const apiClient = {
   async getBudgets(eventId: number): Promise<{ budgets: Budget[] }> {
     return fetchAPI(`/api/events/${eventId}/budgets`);
   },
+
+  // イベント作成AIチャット
+  async createEventChat(message: string, history: { role: string; content: string }[]): Promise<{
+    reply: string;
+    suggestedEvent?: { title: string; start_at: string; end_at: string; location?: string };
+  }> {
+    return fetchAPI('/api/events/create-chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, history }),
+    });
+  },
 };

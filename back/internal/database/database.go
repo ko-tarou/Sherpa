@@ -98,6 +98,24 @@ func AutoMigrate() error {
 	return nil
 }
 
+// EnsureDefaultOrganization デフォルト組織がなければ作成
+func EnsureDefaultOrganization() error {
+	var count int64
+	if err := DB.Model(&models.Organization{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+	desc := "デフォルト組織"
+	org := models.Organization{Name: "My Organization", Description: &desc}
+	if err := DB.Create(&org).Error; err != nil {
+		return err
+	}
+	log.Println("Created default organization:", org.Name)
+	return nil
+}
+
 // Close データベース接続を閉じる
 func Close() error {
 	sqlDB, err := DB.DB()

@@ -6,15 +6,16 @@ import TasksPage from './pages/TasksPage';
 import BudgetPage from './pages/BudgetPage';
 import TeamPage from './pages/TeamPage';
 import ChatPage from './pages/ChatPage';
+import CreateEventChatPage from './pages/CreateEventChatPage';
 import { NavItemType, Event } from './types';
 import { useEvents, useEvent } from './hooks/useEvents';
-import { calculateDaysUntil } from './utils/dateUtils';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavItemType>(NavItemType.DASHBOARD);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-  
-  const { events, loading: eventsLoading } = useEvents();
+  const [showCreateEventChat, setShowCreateEventChat] = useState(false);
+
+  const { events, loading: eventsLoading, reload: reloadEvents } = useEvents();
   const { event, loading: eventLoading } = useEvent(selectedEventId);
 
   // 最初のイベントを自動選択
@@ -37,7 +38,10 @@ const App: React.FC = () => {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <p className="text-gray-500 mb-4">イベントがありません</p>
-            <button className="px-4 py-2 bg-primary text-white rounded-lg">
+            <button
+              onClick={() => setShowCreateEventChat(true)}
+              className="px-4 py-2 bg-primary text-white rounded-lg"
+            >
               新規イベントを作成
             </button>
           </div>
@@ -63,17 +67,28 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen overflow-hidden text-gray-100 font-display" style={{ backgroundColor: '#0A0A0B', color: '#f3f4f6' }}>
-      <Sidebar 
-        activeTab={activeTab} 
+      <Sidebar
+        activeTab={activeTab}
         setActiveTab={setActiveTab}
         events={events}
         selectedEventId={selectedEventId}
         onEventSelect={setSelectedEventId}
+        onCreateEventClick={() => setShowCreateEventChat(true)}
       />
-      
+
       <main className="flex-1 overflow-y-auto">
         {renderPage()}
       </main>
+
+      {showCreateEventChat && (
+        <CreateEventChatPage
+          onClose={() => setShowCreateEventChat(false)}
+          onEventCreated={(eventId) => {
+            reloadEvents();
+            setSelectedEventId(eventId);
+          }}
+        />
+      )}
     </div>
   );
 };

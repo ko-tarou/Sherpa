@@ -8,9 +8,10 @@ interface SidebarProps {
   events: Event[];
   selectedEventId: number | null;
   onEventSelect: (eventId: number) => void;
+  onCreateEventClick: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect, onCreateEventClick }) => {
   const navItems = [
     { type: NavItemType.DASHBOARD, label: 'ダッシュボード', icon: 'grid_view' },
     { type: NavItemType.TASKS, label: 'タスク', icon: 'assignment' },
@@ -49,7 +50,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, sele
         </nav>
         
         <div className="px-8 mt-10">
-          <button className="flex w-full items-center justify-center gap-2 rounded-xl h-14 bg-primary text-white text-base font-black shadow-[0_0_20px_rgba(225,29,72,0.3)] hover:bg-accent-red transition-all">
+          <button
+            onClick={onCreateEventClick}
+            className="flex w-full items-center justify-center gap-2 rounded-xl h-14 bg-primary text-white text-base font-black shadow-[0_0_20px_rgba(225,29,72,0.3)] hover:bg-accent-red transition-all"
+          >
             <span className="material-symbols-outlined">add_circle</span>
             <span>新規イベント作成</span>
           </button>

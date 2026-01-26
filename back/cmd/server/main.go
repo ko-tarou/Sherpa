@@ -28,6 +28,10 @@ func main() {
 	if err := database.AutoMigrate(); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
+	// デフォルト組織を確保
+	if err := database.EnsureDefaultOrganization(); err != nil {
+		log.Fatal("Failed to ensure default organization:", err)
+	}
 
 	// Ginルーターの設定
 	env := os.Getenv("ENV")
@@ -76,6 +80,7 @@ func main() {
 		api.POST("/events", handlers.CreateEvent)
 		api.PUT("/events/:id", handlers.UpdateEvent)
 		api.DELETE("/events/:id", handlers.DeleteEvent)
+		api.POST("/events/create-chat", handlers.CreateEventChat)
 	}
 
 	// サーバー起動
