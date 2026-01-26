@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Task } from '../types';
-import { generateSmartTasks } from '../services/geminiService';
+import { apiClient } from '../services/api';
 
 interface TaskCardProps {
   tasks: Task[];
@@ -15,15 +15,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, onTasksUpdate })
   const handleAiGeneration = async () => {
     setIsGenerating(true);
     try {
-      const generated = await generateSmartTasks(eventTitle);
-      const newTasks: Task[] = generated.map((t: any, index: number) => ({
-        id: `ai-${Date.now()}-${index}`,
-        title: t.title,
-        deadline: t.deadline,
-        isPriority: true,
-        completed: false
-      }));
-      onTasksUpdate([...newTasks, ...tasks].slice(0, 6));
+      const response = await apiClient.generateTasks(eventTitle);
+      if (response.tasks && response.tasks.length > 0) {
+        const newTasks: Task[] = response.tasks.map((t: any, index: number) => ({
+          id: `ai-${Date.now()}-${index}`,
+          title: t.title,
+          deadline: t.deadline,
+          isPriority: true,
+          completed: false
+        }));
+        onTasksUpdate([...newTasks, ...tasks].slice(0, 6));
+      } else {
+        alert('AIタスク生成に失敗しました。APIキーが設定されていない可能性があります。');
+      }
+    } catch (error) {
+      console.error('Error generating tasks:', error);
+      alert('AIタスク生成中にエラーが発生しました。バックエンドサーバーが起動しているか確認してください。');
     } finally {
       setIsGenerating(false);
     }

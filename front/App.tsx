@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import CountdownCard from './components/CountdownCard';
 import TaskCard from './components/TaskCard';
@@ -29,7 +29,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-main-bg text-gray-100 font-display">
+    <div className="flex h-screen overflow-hidden text-gray-100 font-display" style={{ backgroundColor: '#0A0A0B', color: '#f3f4f6' }}>
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <main className="flex-1 overflow-y-auto p-6 md:p-12">
