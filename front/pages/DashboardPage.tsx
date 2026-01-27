@@ -40,6 +40,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
       .slice(0, 6);
   }, [tasks]);
 
+  const staffCount = useMemo(() => {
+    return event.event_staffs ? event.event_staffs.length : 0;
+  }, [event.event_staffs]);
+
   return (
     <div className="p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -81,8 +85,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
             <div>
               <p className="text-xs text-gray-500 font-bold">総スタッフ数</p>
               <p className="text-xl font-black">
-                {/* TODO: event_staffsをAPIから取得 */}
-                0 名
+                {staffCount} 名
               </p>
             </div>
           </div>

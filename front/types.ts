@@ -31,6 +31,7 @@ export interface Event {
   organization?: Organization;
   tasks?: Task[];
   budgets?: Budget[];
+  event_staffs?: EventStaff[];
 }
 
 export interface Task {

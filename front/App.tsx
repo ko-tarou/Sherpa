@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import DashboardPage from './pages/DashboardPage';
@@ -7,7 +6,9 @@ import BudgetPage from './pages/BudgetPage';
 import TeamPage from './pages/TeamPage';
 import ChatPage from './pages/ChatPage';
 import CreateEventChatPage from './pages/CreateEventChatPage';
-import { NavItemType, Event } from './types';
+import CreateUserPage from './pages/CreateUserPage';
+import { NavItemType } from './types';
+import { useUser } from './hooks/useUser';
 import { useEvents, useEvent } from './hooks/useEvents';
 
 const App: React.FC = () => {
@@ -15,7 +16,8 @@ const App: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [showCreateEventChat, setShowCreateEventChat] = useState(false);
 
-  const { events, loading: eventsLoading, reload: reloadEvents } = useEvents();
+  const { user, login, logout, loading: userLoading } = useUser();
+  const { events, loading: eventsLoading, reload: reloadEvents } = useEvents(user?.id ?? null);
   const { event, loading: eventLoading } = useEvent(selectedEventId);
 
   // 最初のイベントを自動選択
@@ -65,6 +67,24 @@ const App: React.FC = () => {
     }
   };
 
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: '#0A0A0B', color: '#f3f4f6' }}>
+        <div className="text-gray-500">読み込み中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <CreateUserPage
+        onLogin={async (token) => {
+          await login(token);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden text-gray-100 font-display" style={{ backgroundColor: '#0A0A0B', color: '#f3f4f6' }}>
       <Sidebar
@@ -74,6 +94,8 @@ const App: React.FC = () => {
         selectedEventId={selectedEventId}
         onEventSelect={setSelectedEventId}
         onCreateEventClick={() => setShowCreateEventChat(true)}
+        user={user}
+        onLogout={logout}
       />
 
       <main className="flex-1 overflow-y-auto">
@@ -87,6 +109,7 @@ const App: React.FC = () => {
             reloadEvents();
             setSelectedEventId(eventId);
           }}
+          userId={user.id}
         />
       )}
     </div>

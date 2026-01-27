@@ -17,9 +17,10 @@ interface SuggestedEvent {
 interface CreateEventChatPageProps {
   onClose: () => void;
   onEventCreated: (eventId: number) => void;
+  userId: number;
 }
 
-const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEventCreated }) => {
+const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEventCreated, userId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
@@ -96,6 +97,7 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
         end_at: suggestedEvent.end_at,
         location: suggestedEvent.location || undefined,
         status: 'draft',
+        user_id: userId,
       });
       onEventCreated(event.id);
       onClose();
@@ -245,6 +247,7 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
           onEventCreated(eventId);
           onClose();
         }}
+        userId={userId}
         initialData={formInitialData || undefined}
       />
     </div>

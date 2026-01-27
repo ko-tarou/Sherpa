@@ -1,4 +1,4 @@
-import { Event, Task, Budget, EventStaff, Ticket, EventParticipant, Channel, Message } from '../types';
+import { Event, Task, Budget, EventStaff, Ticket, EventParticipant, Channel, Message, User } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -15,12 +15,18 @@ async function fetchAPI<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  const token = localStorage.getItem('sherpa_token');
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -32,6 +38,31 @@ async function fetchAPI<T>(
 }
 
 export const apiClient = {
+  // 認証関連
+  async startOAuth(): Promise<{ auth_url: string }> {
+    return fetchAPI('/api/auth/google');
+  },
+
+  async getMe(): Promise<{ user: User }> {
+    return fetchAPI('/api/auth/me');
+  },
+
+  // ユーザー関連
+  async createUser(data: { name: string; email: string }): Promise<{ user: User }> {
+    return fetchAPI('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getUser(id: number): Promise<{ user: User }> {
+    return fetchAPI(`/api/users/${id}`);
+  },
+
+  async getUserEvents(userId: number): Promise<{ events: Event[] }> {
+    return fetchAPI(`/api/users/${userId}/events`);
+  },
+
   // イベント関連
   async getEvents(): Promise<{ events: Event[] }> {
     return fetchAPI('/api/events');
@@ -41,7 +72,15 @@ export const apiClient = {
     return fetchAPI(`/api/events/${id}`);
   },
 
-  async createEvent(eventData: Partial<Event>): Promise<{ event: Event }> {
+  async createEvent(eventData: {
+    organization_id: number;
+    title: string;
+    start_at: string;
+    end_at: string;
+    location?: string;
+    status: string;
+    user_id?: number;
+  }): Promise<{ event: Event }> {
     return fetchAPI('/api/events', {
       method: 'POST',
       body: JSON.stringify(eventData),

@@ -81,6 +81,16 @@ func main() {
 		api.PUT("/events/:id", handlers.UpdateEvent)
 		api.DELETE("/events/:id", handlers.DeleteEvent)
 		api.POST("/events/create-chat", handlers.CreateEventChat)
+
+		// 認証関連
+		api.GET("/auth/google", handlers.StartOAuth)
+		api.GET("/auth/callback", handlers.OAuthCallback)
+		api.GET("/auth/me", handlers.AuthMiddleware(), handlers.GetMe)
+
+		// ユーザー関連（/:id/events は /:id より先に定義）
+		api.POST("/users", handlers.CreateUser)
+		api.GET("/users/:id/events", handlers.GetUserEvents)
+		api.GET("/users/:id", handlers.GetUser)
 	}
 
 	// サーバー起動

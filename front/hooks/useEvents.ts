@@ -1,21 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Event } from '../types';
 import { apiClient } from '../services/api';
 
-export const useEvents = () => {
+export const useEvents = (userId: number | null) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
+    if (!userId) return;
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.getEvents();
+      const response = await apiClient.getUserEvents(userId);
       setEvents(response.events);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'イベントの読み込みに失敗しました');
@@ -23,7 +20,16 @@ export const useEvents = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadEvents();
+    } else {
+      setEvents([]);
+      setLoading(false);
+    }
+  }, [userId, loadEvents]);
 
   return { events, loading, error, reload: loadEvents };
 };

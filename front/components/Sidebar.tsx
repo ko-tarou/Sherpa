@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavItemType, Event } from '../types';
+import { NavItemType, Event, User } from '../types';
 
 interface SidebarProps {
   activeTab: NavItemType;
@@ -9,9 +9,11 @@ interface SidebarProps {
   selectedEventId: number | null;
   onEventSelect: (eventId: number) => void;
   onCreateEventClick: () => void;
+  user: User;
+  onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect, onCreateEventClick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect, onCreateEventClick, user, onLogout }) => {
   const navItems = [
     { type: NavItemType.DASHBOARD, label: 'ダッシュボード', icon: 'grid_view' },
     { type: NavItemType.TASKS, label: 'タスク', icon: 'assignment' },
@@ -93,14 +95,25 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, sele
         </button>
         
         <div className="mt-4 p-3 bg-white/5 rounded-2xl flex items-center gap-3">
-          <div 
-            className="size-10 rounded-full bg-cover bg-center border border-white/20" 
-            style={{ backgroundImage: "url('https://picsum.photos/seed/admin/100/100')" }}
-          ></div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-white truncate">管理者 太郎</p>
-            <p className="text-[10px] text-gray-500 truncate">admin@event.jp</p>
+          <div
+            className="size-10 rounded-full bg-cover bg-center border border-white/20 flex items-center justify-center bg-primary/20"
+            style={user.avatar_url ? { backgroundImage: `url('${user.avatar_url}')` } : undefined}
+          >
+            {!user.avatar_url && (
+              <span className="material-symbols-outlined text-primary text-xl">person</span>
+            )}
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white truncate">{user.name}</p>
+            <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+          </div>
+          <button
+            onClick={onLogout}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-white/5 hover:text-white transition-colors"
+            title="ログアウト"
+          >
+            <span className="material-symbols-outlined text-lg">logout</span>
+          </button>
         </div>
       </div>
     </aside>

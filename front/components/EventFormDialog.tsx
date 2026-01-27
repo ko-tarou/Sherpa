@@ -5,6 +5,7 @@ interface EventFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onEventCreated: (eventId: number) => void;
+  userId?: number;
   initialData?: {
     title?: string;
     start_at?: string;
@@ -26,6 +27,7 @@ const EventFormDialog: React.FC<EventFormDialogProps> = ({
   isOpen,
   onClose,
   onEventCreated,
+  userId,
   initialData,
 }) => {
   const [formData, setFormData] = useState({
@@ -69,6 +71,7 @@ const EventFormDialog: React.FC<EventFormDialogProps> = ({
         end_at: toRFC3339(formData.end_at),
         location: formData.location || undefined,
         status: 'draft',
+        ...(userId != null && { user_id: userId }),
       });
       onEventCreated(event.id);
       onClose();

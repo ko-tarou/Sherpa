@@ -31,7 +31,10 @@ sudo systemctl start postgresql
 
 ```bash
 go mod download
+go mod tidy
 ```
+
+**注意**: OAuth認証を使用するには、`go mod tidy`を実行してJWTライブラリをインストールしてください。
 
 ### 3. 環境変数の設定
 
@@ -51,7 +54,23 @@ DB_PASSWORD=postgres
 DB_NAME=sherpa
 DB_SSLMODE=disable
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# OAuth設定（Google）
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URL=http://localhost:5173/auth/callback
+FRONTEND_URL=http://localhost:5173
+
+# JWT設定（オプション、未設定の場合は自動生成）
+JWT_SECRET=your_jwt_secret_key
 ```
+
+### Google OAuth設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/)でプロジェクトを作成
+2. 「APIとサービス」→「認証情報」でOAuth 2.0クライアントIDを作成
+3. 承認済みのリダイレクトURIに `http://localhost:5173/auth/callback` を追加
+4. クライアントIDとシークレットを`.env`に設定
 
 ### 4. データベースのセットアップ
 
