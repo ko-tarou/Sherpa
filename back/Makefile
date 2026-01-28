@@ -1,4 +1,4 @@
-.PHONY: dev build run migrate-up migrate-down test clean
+.PHONY: dev build run batch build-batch migrate-up migrate-down test clean
 
 # Development
 dev:
@@ -7,6 +7,13 @@ dev:
 # Build
 build:
 	go build -o bin/sherpa-backend cmd/server/main.go
+
+# Batch (週次クリーンアップ: 論理削除済みチャンネル等の物理削除)
+batch:
+	go run ./cmd/batch
+
+build-batch:
+	go build -o bin/batch ./cmd/batch
 
 # Run
 run:

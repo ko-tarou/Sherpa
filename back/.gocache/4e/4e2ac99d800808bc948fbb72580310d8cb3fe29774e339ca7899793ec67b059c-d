@@ -1,0 +1,10 @@
+./admin_handler.go
+./auth_handler.go
+./budget_handler.go
+./channel_handler.go
+./event_chat_handler.go
+./event_handler.go
+./invitation_handler.go
+./notification_handler.go
+./task_handler.go
+./user_handler.go

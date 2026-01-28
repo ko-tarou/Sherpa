@@ -63,6 +63,9 @@ FRONTEND_URL=http://localhost:5173
 
 # JWT設定（オプション、未設定の場合は自動生成）
 JWT_SECRET=your_jwt_secret_key
+
+# 管理者API（管理者アプリ /admin 用）
+ADMIN_API_KEY=your_admin_api_key_here
 ```
 
 ### Google OAuth設定
@@ -118,10 +121,41 @@ go run cmd/server/main.go
 make build
 ```
 
+### バッチ処理（週次クリーンアップ）
+
+論理削除済みチャンネル（および CASCADE で紐づくメッセージ・メンバー）を物理削除するバッチです。週1回 cron で実行する想定です。
+
+```bash
+go run ./cmd/batch
+```
+
+例: 毎週日曜 3:00 に実行（crontab `0 3 * * 0`）:
+
+```bash
+0 3 * * 0 cd /path/to/Sherpa/back && go run ./cmd/batch >> /var/log/sherpa-batch.log 2>&1
+```
+
+ビルド済みバイナリを使う場合:
+
+```bash
+go build -o bin/batch ./cmd/batch
+0 3 * * 0 /path/to/Sherpa/back/bin/batch >> /var/log/sherpa-batch.log 2>&1
+```
+
+### 管理者API・管理者アプリ
+
+- `back/.env` に `ADMIN_API_KEY` を設定する。
+- 管理者アプリ (`admin/`) から `GET /api/admin/events`（全イベント一覧）・`POST /api/admin/batch/run`（バッチ手動実行）を利用できる。
+- 認証: リクエストヘッダーに `X-Admin-Key: <ADMIN_API_KEY>` を付与する。
+
 ## API エンドポイント
 
 ### ヘルスチェック
 - `GET /api/health` - サーバーの状態確認
+
+### 管理者API（`X-Admin-Key` 必須）
+- `GET /api/admin/events` - 全イベント一覧（集計付き）
+- `POST /api/admin/batch/run` - バッチ処理（論理削除チャンネル物理削除）の手動実行
 
 ### イベント
 - `GET /api/events` - イベント一覧取得
@@ -142,9 +176,12 @@ make build
 ```
 back/
 ├── cmd/
-│   └── server/
-│       └── main.go          # エントリーポイント
+│   ├── server/
+│   │   └── main.go          # API サーバー
+│   └── batch/
+│       └── main.go          # 週次バッチ（クリーンアップ）
 ├── internal/
+│   ├── batch/               # バッチ用パッケージ
 │   ├── models/              # データモデル
 │   ├── handlers/            # HTTPハンドラー
 │   ├── services/            # ビジネスロジック

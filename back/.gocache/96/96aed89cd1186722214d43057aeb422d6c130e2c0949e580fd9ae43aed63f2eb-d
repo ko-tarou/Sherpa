@@ -1,0 +1,10 @@
+./budget.go
+./channel.go
+./event.go
+./invitation.go
+./meeting.go
+./notification.go
+./organization.go
+./task.go
+./ticket.go
+./user.go

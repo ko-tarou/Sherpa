@@ -45,7 +45,7 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Admin-Key, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
 		if c.Request.Method == "OPTIONS" {
@@ -63,6 +63,14 @@ func main() {
 			"message": "Sherpa Backend API is running",
 		})
 	})
+
+	// 管理者API（X-Admin-Key または Authorization: Bearer <ADMIN_API_KEY>）
+	admin := r.Group("/api/admin")
+	admin.Use(handlers.AdminMiddleware())
+	{
+		admin.GET("/events", handlers.GetAdminEvents)
+		admin.POST("/batch/run", handlers.RunBatch)
+	}
 
 	// APIルート
 	api := r.Group("/api")

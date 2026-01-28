@@ -7,8 +7,9 @@
 ```
 Sherpa/
 ├── front/          # フロントエンド (React + Vite + TypeScript)
-├── back/           # バックエンド (Express + TypeScript)
-└── package.json    # モノレポ管理用
+├── back/           # バックエンド (Go + Gin + PostgreSQL)
+├── admin/          # 管理者用アプリ (React + Vite) — 全イベント一覧・バッチ実行
+└── ...
 ```
 
 ## セットアップ
@@ -60,12 +61,21 @@ npm run dev
 ### 個別に起動
 
 ```bash
-# フロントエンドのみ (http://localhost:3000)
-npm run dev:front
+# フロントエンド (http://localhost:5173)
+cd front && npm run dev
 
-# バックエンドのみ (http://localhost:3001)
-npm run dev:back
+# バックエンド (http://localhost:3001)
+cd back && make dev
+
+# 管理者アプリ (http://localhost:5175)
+cd admin && npm install && npm run dev
 ```
+
+### 管理者アプリ (admin)
+
+- 全イベントの状態を表で確認・検索・ソート
+- 論理削除チャンネル物理削除バッチの手動実行
+- `back/.env` に `ADMIN_API_KEY` を設定し、管理画面ログイン時にそのキーを入力して利用
 
 ## ビルド
 
