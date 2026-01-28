@@ -21,6 +21,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   const [showChannelSettings, setShowChannelSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isComposingRef = useRef(false);
 
   const staffs = event.event_staffs ?? [];
   const isAdmin = staffs.some((s: EventStaff) => s.user_id === user.id && s.role === 'Admin');
@@ -85,10 +86,21 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isComposingRef.current) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const onCompositionStart = () => {
+    isComposingRef.current = true;
+  };
+
+  const onCompositionEnd = () => {
+    setTimeout(() => {
+      isComposingRef.current = false;
+    }, 0);
   };
 
   const publicChannels = channels.filter((c) => !c.is_private);
@@ -240,6 +252,8 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onKeyDown}
+                  onCompositionStart={onCompositionStart}
+                  onCompositionEnd={onCompositionEnd}
                   placeholder={`#${selectedChannel.name.replace(/^#/, '')}へのメッセージを送信...`}
                   rows={1}
                   className="flex-1 min-h-[44px] max-h-32 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary resize-none"
