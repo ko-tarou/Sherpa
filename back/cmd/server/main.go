@@ -111,6 +111,17 @@ func main() {
 		auth.GET("/notifications/unread-count", handlers.GetUnreadNotificationCount)
 		auth.PATCH("/notifications/:id/read", handlers.MarkNotificationRead)
 		auth.GET("/invitations/mine", handlers.GetMyPendingInvitations)
+
+		// チャット（チャンネル・メッセージ）
+		auth.GET("/events/:id/channels", handlers.GetChannels)
+		auth.POST("/events/:id/channels", handlers.CreateChannel)
+		auth.GET("/channels/:id/messages", handlers.GetMessages)
+		auth.POST("/channels/:id/messages", handlers.CreateMessage)
+		auth.PATCH("/channels/:id", handlers.UpdateChannel)
+		auth.DELETE("/channels/:id", handlers.DeleteChannel)
+		auth.GET("/channels/:id/members", handlers.GetChannelMembers)
+		auth.POST("/channels/:id/members", handlers.AddChannelMember)
+		auth.DELETE("/channels/:id/members/:userId", handlers.RemoveChannelMember)
 	}
 
 	// サーバー起動

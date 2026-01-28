@@ -118,6 +118,14 @@ export interface Channel {
   created_at: string;
 }
 
+export interface ChannelMember {
+  id: number;
+  channel_id: number;
+  user_id: number;
+  joined_at: string;
+  user?: User;
+}
+
 export interface Message {
   id: number;
   channel_id: number;

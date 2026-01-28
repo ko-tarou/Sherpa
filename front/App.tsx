@@ -61,7 +61,7 @@ const App: React.FC = () => {
       case NavItemType.TEAM:
         return <TeamPage eventId={selectedEventId!} event={event} user={user} />;
       case NavItemType.CHAT:
-        return <ChatPage eventId={selectedEventId} />;
+        return <ChatPage eventId={selectedEventId!} event={event} user={user} />;
       default:
         return <DashboardPage event={event} />;
     }

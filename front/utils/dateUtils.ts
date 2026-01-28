@@ -77,6 +77,12 @@ export const formatCompletedAt = (dateString: string): string => {
   return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} 完了`;
 };
 
+/** チャットメッセージ用: "10:15" */
+export const formatMessageTime = (dateString: string): string => {
+  const d = new Date(dateString);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
 /** datetime-local 用: ISO → "YYYY-MM-DDTHH:mm" */
 export const deadlineToDatetimeLocal = (iso: string): string => {
   const d = new Date(iso);

@@ -1,4 +1,4 @@
-import { Event, Task, Budget, EventStaff, EventInvitation, Notification, Ticket, EventParticipant, Channel, Message, User } from '../types';
+import { Event, Task, Budget, EventStaff, EventInvitation, Notification, Ticket, EventParticipant, Channel, ChannelMember, Message, User } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -200,6 +200,61 @@ export const apiClient = {
 
   async markNotificationRead(id: number): Promise<{ notification: Notification }> {
     return fetchAPI(`/api/notifications/${id}/read`, { method: 'PATCH' });
+  },
+
+  // チャンネル・メッセージ
+  async getChannels(eventId: number): Promise<{ channels: Channel[] }> {
+    return fetchAPI(`/api/events/${eventId}/channels`);
+  },
+
+  async createChannel(
+    eventId: number,
+    data: { name: string; description?: string; is_private?: boolean }
+  ): Promise<{ channel: Channel }> {
+    return fetchAPI(`/api/events/${eventId}/channels`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getMessages(channelId: number): Promise<{ messages: Message[] }> {
+    return fetchAPI(`/api/channels/${channelId}/messages`);
+  },
+
+  async createMessage(channelId: number, data: { content: string }): Promise<{ message: Message }> {
+    return fetchAPI(`/api/channels/${channelId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateChannel(
+    channelId: number,
+    data: { name?: string; description?: string; is_private?: boolean }
+  ): Promise<{ channel: Channel }> {
+    return fetchAPI(`/api/channels/${channelId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteChannel(channelId: number): Promise<{ ok: boolean }> {
+    return fetchAPI(`/api/channels/${channelId}`, { method: 'DELETE' });
+  },
+
+  async getChannelMembers(channelId: number): Promise<{ members: ChannelMember[] }> {
+    return fetchAPI(`/api/channels/${channelId}/members`);
+  },
+
+  async addChannelMember(channelId: number, userId: number): Promise<{ member: ChannelMember }> {
+    return fetchAPI(`/api/channels/${channelId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  async removeChannelMember(channelId: number, userId: number): Promise<{ ok: boolean }> {
+    return fetchAPI(`/api/channels/${channelId}/members/${userId}`, { method: 'DELETE' });
   },
 
   // イベント作成AIチャット
