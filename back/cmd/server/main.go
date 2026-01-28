@@ -82,15 +82,35 @@ func main() {
 		api.DELETE("/events/:id", handlers.DeleteEvent)
 		api.POST("/events/create-chat", handlers.CreateEventChat)
 
+		// 予算関連
+		api.GET("/events/:id/budgets", handlers.GetBudgets)
+		api.POST("/events/:id/budgets", handlers.CreateBudget)
+		api.PUT("/budgets/:id", handlers.UpdateBudget)
+		api.DELETE("/budgets/:id", handlers.DeleteBudget)
+
 		// 認証関連
 		api.GET("/auth/google", handlers.StartOAuth)
 		api.GET("/auth/callback", handlers.OAuthCallback)
 		api.GET("/auth/me", handlers.AuthMiddleware(), handlers.GetMe)
 
-		// ユーザー関連（/:id/events は /:id より先に定義）
+		// ユーザー関連（search は :id より先に定義）
 		api.POST("/users", handlers.CreateUser)
+		api.GET("/users/search", handlers.AuthMiddleware(), handlers.SearchUsers)
 		api.GET("/users/:id/events", handlers.GetUserEvents)
 		api.GET("/users/:id", handlers.GetUser)
+
+		// 招待・通知（認証必須）
+		auth := api.Group("")
+		auth.Use(handlers.AuthMiddleware())
+		auth.GET("/events/:id/invitable-users", handlers.GetInvitableUsers)
+		auth.GET("/events/:id/invitations", handlers.GetEventInvitations)
+		auth.POST("/events/:id/invitations", handlers.CreateInvitation)
+		auth.POST("/invitations/:id/accept", handlers.AcceptInvitation)
+		auth.POST("/invitations/:id/decline", handlers.DeclineInvitation)
+		auth.GET("/notifications", handlers.GetNotifications)
+		auth.GET("/notifications/unread-count", handlers.GetUnreadNotificationCount)
+		auth.PATCH("/notifications/:id/read", handlers.MarkNotificationRead)
+		auth.GET("/invitations/mine", handlers.GetMyPendingInvitations)
 	}
 
 	// サーバー起動

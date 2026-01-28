@@ -51,3 +51,44 @@ export const formatDeadline = (deadlineString: string): string => {
     return `残り ${diffDays}日`;
   }
 };
+
+/** カード用: "期限: 11/12" / "本日締切" / "期限切れ" */
+export const formatDeadlineShort = (
+  deadlineString: string
+): { label: string; isDueToday: boolean; isOverdue: boolean } => {
+  const deadline = new Date(deadlineString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const isDueToday = diffDays === 0;
+  const isOverdue = diffDays < 0;
+  const label = isOverdue
+    ? '期限切れ'
+    : isDueToday
+    ? '本日締切'
+    : `期限: ${String(deadline.getMonth() + 1).padStart(2, '0')}/${String(deadline.getDate()).padStart(2, '0')}`;
+  return { label, isDueToday, isOverdue };
+};
+
+/** 完了タスク用: "11/10 完了" */
+export const formatCompletedAt = (dateString: string): string => {
+  const d = new Date(dateString);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} 完了`;
+};
+
+/** datetime-local 用: ISO → "YYYY-MM-DDTHH:mm" */
+export const deadlineToDatetimeLocal = (iso: string): string => {
+  const d = new Date(iso);
+  return toDatetimeLocal(d);
+};
+
+/** Date → "YYYY-MM-DDTHH:mm" (local) */
+export const toDatetimeLocal = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day}T${h}:${min}`;
+};

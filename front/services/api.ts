@@ -1,4 +1,4 @@
-import { Event, Task, Budget, EventStaff, Ticket, EventParticipant, Channel, Message, User } from '../types';
+import { Event, Task, Budget, EventStaff, EventInvitation, Notification, Ticket, EventParticipant, Channel, Message, User } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -57,6 +57,10 @@ export const apiClient = {
 
   async getUser(id: number): Promise<{ user: User }> {
     return fetchAPI(`/api/users/${id}`);
+  },
+
+  async searchUsers(q: string): Promise<{ users: User[] }> {
+    return fetchAPI(`/api/users/search?q=${encodeURIComponent(q.trim())}`);
   },
 
   async getUserEvents(userId: number): Promise<{ events: Event[] }> {
@@ -132,9 +136,70 @@ export const apiClient = {
     });
   },
 
-  // 予算関連（今後実装予定）
+  // 予算関連
   async getBudgets(eventId: number): Promise<{ budgets: Budget[] }> {
     return fetchAPI(`/api/events/${eventId}/budgets`);
+  },
+
+  async createBudget(eventId: number, data: { category: string; type: 'income' | 'expense'; planned_amount: number; actual_amount?: number }): Promise<{ budget: Budget }> {
+    return fetchAPI(`/api/events/${eventId}/budgets`, {
+      method: 'POST',
+      body: JSON.stringify({
+        category: data.category,
+        type: data.type,
+        planned_amount: data.planned_amount,
+        actual_amount: data.actual_amount ?? 0,
+      }),
+    });
+  },
+
+  async updateBudget(id: number, data: Partial<Pick<Budget, 'category' | 'type' | 'planned_amount' | 'actual_amount'>>): Promise<{ budget: Budget }> {
+    return fetchAPI(`/api/budgets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteBudget(id: number): Promise<{ ok: boolean }> {
+    return fetchAPI(`/api/budgets/${id}`, { method: 'DELETE' });
+  },
+
+  // 招待・通知
+  async getEventInvitations(eventId: number): Promise<{ invitations: EventInvitation[] }> {
+    return fetchAPI(`/api/events/${eventId}/invitations`);
+  },
+
+  async createInvitation(
+    eventId: number,
+    data: { user_id?: number; email?: string; role: string }
+  ): Promise<{ invitation: EventInvitation }> {
+    const body: { user_id?: number; email?: string; role: string } = { role: data.role };
+    if (data.user_id != null) body.user_id = data.user_id;
+    else if (data.email) body.email = data.email;
+    return fetchAPI(`/api/events/${eventId}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  async acceptInvitation(id: number): Promise<{ invitation: EventInvitation; event_staff: EventStaff }> {
+    return fetchAPI(`/api/invitations/${id}/accept`, { method: 'POST' });
+  },
+
+  async declineInvitation(id: number): Promise<{ invitation: EventInvitation }> {
+    return fetchAPI(`/api/invitations/${id}/decline`, { method: 'POST' });
+  },
+
+  async getNotifications(): Promise<{ notifications: Notification[] }> {
+    return fetchAPI('/api/notifications');
+  },
+
+  async getUnreadNotificationCount(): Promise<{ count: number }> {
+    return fetchAPI('/api/notifications/unread-count');
+  },
+
+  async markNotificationRead(id: number): Promise<{ notification: Notification }> {
+    return fetchAPI(`/api/notifications/${id}/read`, { method: 'PATCH' });
   },
 
   // イベント作成AIチャット

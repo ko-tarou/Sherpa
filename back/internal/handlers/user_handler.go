@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"sherpa-backend/internal/database"
 	"sherpa-backend/internal/models"
@@ -50,6 +51,24 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"user": user})
 }
 
+// SearchUsers ユーザー名で検索（認証必須・全ユーザー対象）
+func SearchUsers(c *gin.Context) {
+	q := strings.TrimSpace(c.Query("q"))
+	if q == "" {
+		c.JSON(http.StatusOK, gin.H{"users": []models.User{}})
+		return
+	}
+	var users []models.User
+	pattern := "%" + q + "%"
+	if err := database.DB.Where("name ILIKE ? OR email ILIKE ?", pattern, pattern).
+		Limit(30).
+		Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"users": users})
+}
+
 // GetUser ユーザー詳細を取得
 func GetUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -67,7 +86,7 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-// GetUserEvents ユーザーが EventStaff として参加しているイベント一覧のみ取得
+// GetUserEvents ユーザーが EventStaff として参加しているイベント一覧を取得（ロール不問）
 func GetUserEvents(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -77,7 +96,7 @@ func GetUserEvents(c *gin.Context) {
 
 	var eventIDs []uint
 	if err := database.DB.Model(&models.EventStaff{}).
-		Where("user_id = ? AND role = ?", uint(id), "Admin").
+		Where("user_id = ?", uint(id)).
 		Pluck("event_id", &eventIDs).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

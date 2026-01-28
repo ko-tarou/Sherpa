@@ -1,6 +1,7 @@
-
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavItemType, Event, User } from '../types';
+import { NotificationsPanel } from './NotificationsPanel';
+import { apiClient } from '../services/api';
 
 interface SidebarProps {
   activeTab: NavItemType;
@@ -11,9 +12,35 @@ interface SidebarProps {
   onCreateEventClick: () => void;
   user: User;
   onLogout: () => void;
+  onInviteAccepted?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect, onCreateEventClick, user, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect, onCreateEventClick, user, onLogout, onInviteAccepted }) => {
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  const fetchUnreadCount = useCallback(() => {
+    apiClient.getUnreadNotificationCount().then((r) => setUnreadCount(r.count)).catch(() => setUnreadCount(0));
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (notifRef.current?.contains(e.target as Node)) return;
+      setNotificationsOpen(false);
+    };
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
+  }, [notificationsOpen]);
+
+  useEffect(() => {
+    if (!notificationsOpen) fetchUnreadCount();
+  }, [notificationsOpen, fetchUnreadCount]);
   const navItems = [
     { type: NavItemType.DASHBOARD, label: 'ダッシュボード', icon: 'grid_view' },
     { type: NavItemType.TASKS, label: 'タスク', icon: 'assignment' },
@@ -85,10 +112,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, sele
       </div>
       
       <div className="flex flex-col gap-4 px-6 border-t border-white/5 pt-8">
-        <button className="flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-white transition-colors">
-          <span className="material-symbols-outlined">notifications</span>
-          <p className="text-sm font-medium">通知</p>
-        </button>
+        <div ref={notifRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setNotificationsOpen((o) => !o)}
+            className="flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-white transition-colors w-full"
+          >
+            <span className="relative inline-flex">
+              <span className="material-symbols-outlined">notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </span>
+            <p className="text-sm font-medium">通知</p>
+          </button>
+          <NotificationsPanel
+            isOpen={notificationsOpen}
+            onClose={() => setNotificationsOpen(false)}
+            onInviteAccepted={onInviteAccepted}
+            onNotificationsChange={fetchUnreadCount}
+          />
+        </div>
         <button className="flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-white transition-colors">
           <span className="material-symbols-outlined">settings</span>
           <p className="text-sm font-medium">設定</p>

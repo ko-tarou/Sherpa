@@ -80,6 +80,8 @@ func AutoMigrate() error {
 		&models.OrganizationMember{},
 		&models.Event{},
 		&models.EventStaff{},
+		&models.EventInvitation{},
+		&models.Notification{},
 		&models.Task{},
 		&models.Budget{},
 		&models.Meeting{},

@@ -66,6 +66,34 @@ export interface EventStaff {
   user?: User;
 }
 
+export type InvitationStatus = 'pending' | 'accepted' | 'declined';
+
+export interface EventInvitation {
+  id: number;
+  event_id: number;
+  inviter_id: number;
+  user_id: number;
+  role: string;
+  status: InvitationStatus;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+  inviter?: User;
+  event?: Event;
+}
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  body: string;
+  related_id: number;
+  related_type: string;
+  read_at: string | null;
+  created_at: string;
+}
+
 export interface Ticket {
   id: number;
   event_id: number;

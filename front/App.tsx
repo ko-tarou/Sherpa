@@ -18,7 +18,7 @@ const App: React.FC = () => {
 
   const { user, login, logout, loading: userLoading } = useUser();
   const { events, loading: eventsLoading, reload: reloadEvents } = useEvents(user?.id ?? null);
-  const { event, loading: eventLoading } = useEvent(selectedEventId);
+  const { event, loading: eventLoading, reload: reloadEvent } = useEvent(selectedEventId);
 
   // 最初のイベントを自動選択
   useEffect(() => {
@@ -57,9 +57,9 @@ const App: React.FC = () => {
       case NavItemType.TASKS:
         return <TasksPage eventId={selectedEventId} />;
       case NavItemType.BUDGET:
-        return <BudgetPage eventId={selectedEventId} />;
+        return <BudgetPage eventId={selectedEventId!} event={event} />;
       case NavItemType.TEAM:
-        return <TeamPage eventId={selectedEventId} />;
+        return <TeamPage eventId={selectedEventId!} event={event} user={user} />;
       case NavItemType.CHAT:
         return <ChatPage eventId={selectedEventId} />;
       default:
@@ -96,6 +96,10 @@ const App: React.FC = () => {
         onCreateEventClick={() => setShowCreateEventChat(true)}
         user={user}
         onLogout={logout}
+        onInviteAccepted={() => {
+          reloadEvents();
+          reloadEvent();
+        }}
       />
 
       <main className="flex-1 overflow-y-auto">

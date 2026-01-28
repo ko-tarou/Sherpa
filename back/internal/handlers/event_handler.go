@@ -32,7 +32,7 @@ func GetEvent(c *gin.Context) {
 
 	var event models.Event
 	if err := database.DB.Preload("Organization").
-		Preload("EventStaffs").
+		Preload("EventStaffs.User").
 		Preload("Tasks").
 		Preload("Budgets").
 		First(&event, uint(id)).Error; err != nil {
