@@ -19,19 +19,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
 
   const totalBudget = useMemo(() => {
     if (!event.budgets) {
-      return { planned: 0, actual: 0 };
+      return { incomePlanned: 0, incomeActual: 0, expensePlanned: 0, expenseActual: 0, remaining: 0 };
     }
     return event.budgets.reduce(
-      (acc, budget) => {
-        if (budget.type === 'expense') {
-          acc.planned += budget.planned_amount;
-          acc.actual += budget.actual_amount;
+      (acc, b) => {
+        if (b.type === 'income') {
+          acc.incomePlanned += b.planned_amount;
+          acc.incomeActual += b.actual_amount;
+        } else {
+          acc.expensePlanned += b.planned_amount;
+          acc.expenseActual += b.actual_amount;
         }
         return acc;
       },
-      { planned: 0, actual: 0 }
+      { incomePlanned: 0, incomeActual: 0, expensePlanned: 0, expenseActual: 0, remaining: 0 }
     );
   }, [event.budgets]);
+
+  const totalBudgetWithRemaining = useMemo(() => ({
+    ...totalBudget,
+    remaining: totalBudget.incomeActual - totalBudget.expenseActual,
+  }), [totalBudget]);
 
   const priorityTasks = useMemo(() => {
     return tasks
@@ -72,7 +80,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
           </div>
 
           <div className="col-span-12 lg:col-span-5">
-            <BudgetCard budget={totalBudget} />
+            <BudgetCard budget={totalBudgetWithRemaining} />
           </div>
         </div>
 

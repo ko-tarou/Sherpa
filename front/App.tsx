@@ -57,7 +57,13 @@ const App: React.FC = () => {
       case NavItemType.TASKS:
         return <TasksPage eventId={selectedEventId} />;
       case NavItemType.BUDGET:
-        return <BudgetPage eventId={selectedEventId!} event={event} />;
+        return (
+          <BudgetPage
+            eventId={selectedEventId!}
+            event={event}
+            onBudgetsChange={reloadEvent}
+          />
+        );
       case NavItemType.TEAM:
         return <TeamPage eventId={selectedEventId!} event={event} user={user} />;
       case NavItemType.CHAT:
