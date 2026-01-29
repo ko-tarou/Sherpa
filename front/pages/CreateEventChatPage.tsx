@@ -20,11 +20,24 @@ interface CreateEventChatPageProps {
   userId: number;
 }
 
+/** **太字** を <strong> に変換。HTMLはエスケープしてXSS対策。 */
+function renderMarkdownBold(text: string): string {
+  const escape = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  const escaped = escape(text);
+  return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />');
+}
+
 const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEventCreated, userId }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: 'こんにちは。イベント作成のアシスタントです。\n\nイベントの**タイトル**、**開始日時**、**終了日時**、あれば**場所**を教えてください。',
+      content: 'こんにちは。イベント作成のアシスタントです。\n\nこれから、イベント運営に必要な項目（タイトル・日時・場所・種別・想定人数・予算感・チケットの有無など）を一緒に洗い出します。不明な点はこちらから質問しますので、分かるところから教えてください。\n\nまず、どんなイベントを開催したいか、タイトルや日時の希望があれば教えてください。',
     },
   ]);
   const [input, setInput] = useState('');
@@ -32,17 +45,28 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
   const [suggestedEvent, setSuggestedEvent] = useState<SuggestedEvent | null>(null);
   const [creating, setCreating] = useState(false);
   const [showFormDialog, setShowFormDialog] = useState(false);
-  const [formInitialData, setFormInitialData] = useState<{
-    title?: string;
-    start_at?: string;
-    end_at?: string;
-    location?: string;
-  } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isComposingRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (isComposingRef.current) return;
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+  const onCompositionStart = () => {
+    isComposingRef.current = true;
+  };
+  const onCompositionEnd = () => {
+    setTimeout(() => {
+      isComposingRef.current = false;
+    }, 0);
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -60,27 +84,15 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
       if (res.suggestedEvent) {
         setSuggestedEvent(res.suggestedEvent);
-        setFormInitialData(res.suggestedEvent);
-      } else {
-        // AIのAPIキーがない場合や、suggestedEventが返ってこない場合はフォームを表示
-        setFormInitialData(null);
-        setShowFormDialog(true);
       }
     } catch (e: any) {
-      // エラー時もフォームを表示（APIキーがない場合など）
       const errorMessage = e.message?.includes('AI機能') || e.message?.includes('API key')
-        ? 'AI機能は現在利用できません。フォームから直接入力してください。'
-        : 'エラーが発生しました。フォームから直接入力してください。';
-      
+        ? 'AI機能は現在利用できません。入力欄横のフォームボタンから直接入力することもできます。'
+        : 'エラーが発生しました。入力欄横のフォームボタンから直接入力することもできます。';
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'assistant',
-          content: errorMessage,
-        },
+        { role: 'assistant', content: errorMessage },
       ]);
-      setFormInitialData(null);
-      setShowFormDialog(true);
     } finally {
       setLoading(false);
     }
@@ -161,7 +173,10 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
                     : 'bg-card-bg border border-white/10 text-gray-100'
                 }`}
               >
-                <p className="text-sm font-medium whitespace-pre-wrap">{m.content}</p>
+                <p
+                  className="text-sm font-medium"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdownBold(m.content) }}
+                />
               </div>
             </div>
           ))}
@@ -218,11 +233,22 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
       {/* 入力 */}
       <div className="flex-shrink-0 px-4 md:px-6 py-4 border-t border-white/10">
         <div className="max-w-2xl mx-auto flex gap-3">
+          <button
+            type="button"
+            onClick={() => setShowFormDialog(true)}
+            className="flex-shrink-0 size-12 rounded-2xl flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+            title="フォームで入力"
+            aria-label="フォームで入力"
+          >
+            <span className="material-symbols-outlined">edit_note</span>
+          </button>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
+            onKeyDown={onKeyDown}
+            onCompositionStart={onCompositionStart}
+            onCompositionEnd={onCompositionEnd}
             placeholder="メッセージを入力..."
             className="flex-1 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
             disabled={loading}
@@ -248,7 +274,6 @@ const CreateEventChatPage: React.FC<CreateEventChatPageProps> = ({ onClose, onEv
           onClose();
         }}
         userId={userId}
-        initialData={formInitialData || undefined}
       />
     </div>
   );

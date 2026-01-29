@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"sherpa-backend/internal/services"
@@ -27,6 +28,7 @@ func CreateEventChat(c *gin.Context) {
 
 	svc, err := services.NewGeminiService()
 	if err != nil {
+		log.Printf("[create-chat] NewGeminiService: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI service unavailable"})
 		return
 	}
@@ -34,6 +36,7 @@ func CreateEventChat(c *gin.Context) {
 
 	reply, suggested, err := svc.ChatEventCreation(req.Message, req.History)
 	if err != nil {
+		log.Printf("[create-chat] ChatEventCreation: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
