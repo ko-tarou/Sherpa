@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavItemType, Event, User } from '../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { apiClient } from '../services/api';
+import EventSettingsModal from './EventSettingsModal';
 
 interface SidebarProps {
   activeTab: NavItemType;
@@ -13,11 +14,26 @@ interface SidebarProps {
   user: User;
   onLogout: () => void;
   onInviteAccepted?: () => void;
+  onEventUpdated?: () => void;
+  onEventDeleted?: (deletedId: number) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, selectedEventId, onEventSelect, onCreateEventClick, user, onLogout, onInviteAccepted }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  setActiveTab,
+  events,
+  selectedEventId,
+  onEventSelect,
+  onCreateEventClick,
+  user,
+  onLogout,
+  onInviteAccepted,
+  onEventUpdated,
+  onEventDeleted,
+}) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [settingsEventId, setSettingsEventId] = useState<number | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const fetchUnreadCount = useCallback(() => {
@@ -94,21 +110,55 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, sele
             <p className="text-xs text-gray-500 font-bold mb-2 px-4">イベント選択</p>
             <div className="space-y-1">
               {events.map((event) => (
-                <button
+                <div
                   key={event.id}
-                  onClick={() => onEventSelect(event.id)}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-all ${
+                  className={`flex items-center gap-1 w-full rounded-lg transition-all group ${
                     selectedEventId === event.id
                       ? 'bg-primary text-white'
                       : 'text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <p className="text-sm font-medium truncate">{event.title}</p>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onEventSelect(event.id)}
+                    className="flex-1 min-w-0 text-left px-4 py-2"
+                  >
+                    <p className="text-sm font-medium truncate">{event.title}</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSettingsEventId(event.id);
+                    }}
+                    className={`p-2 rounded-lg shrink-0 transition-colors ${
+                      selectedEventId === event.id
+                        ? 'hover:bg-white/20'
+                        : 'hover:bg-white/10 text-gray-400 group-hover:text-white'
+                    }`}
+                    title="イベント設定"
+                    aria-label="イベント設定"
+                  >
+                    <span className="material-symbols-outlined text-lg">settings</span>
+                  </button>
+                </div>
               ))}
             </div>
           </div>
         )}
+
+        <EventSettingsModal
+          isOpen={settingsEventId != null}
+          onClose={() => setSettingsEventId(null)}
+          event={events.find((e) => e.id === settingsEventId!) ?? null}
+          onUpdated={() => {
+            onEventUpdated?.();
+          }}
+          onDeleted={(id) => {
+            setSettingsEventId(null);
+            onEventDeleted?.(id);
+          }}
+        />
       </div>
       
       <div className="flex flex-col gap-4 px-6 border-t border-white/5 pt-8">
