@@ -61,6 +61,8 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   const [editingDeadlineId, setEditingDeadlineId] = useState<number | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<number | null>(null);
   const [dropTargetCol, setDropTargetCol] = useState<Status | null>(null);
+  const [clearingCompleted, setClearingCompleted] = useState(false);
+  const [showClearCompletedConfirm, setShowClearCompletedConfirm] = useState(false);
 
   useEffect(() => {
     if (!menuTaskId) return;
@@ -131,6 +133,21 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
     d.setHours(12, 0, 0, 0);
     setNewTaskDeadline(toDatetimeLocal(d));
     setShowCreateForm(false);
+  };
+
+  const handleClearCompleted = async () => {
+    const completed = byStatus.completed;
+    if (completed.length === 0) return;
+    setClearingCompleted(true);
+    try {
+      for (const t of completed) await deleteTask(t.id);
+      setShowClearCompletedConfirm(false);
+    } catch (e) {
+      console.error(e);
+      alert('削除中にエラーが発生しました');
+    } finally {
+      setClearingCompleted(false);
+    }
   };
 
   const handleGenerateTasks = async () => {
@@ -245,23 +262,37 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                 onDrop={(e) => handleDrop(e, col.key)}
               >
                 <div
-                  className="px-4 py-3 flex items-center justify-between bg-white/5 border-b border-white/10"
+                  className="px-4 py-3 flex items-center justify-between gap-2 bg-white/5 border-b border-white/10"
                   onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTargetCol(col.key); }}
                   onDrop={(e) => handleDrop(e, col.key)}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-white text-lg">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="material-symbols-outlined text-white text-lg shrink-0">
                       {col.key === 'todo' ? 'radio_button_unchecked' : col.key === 'in_progress' ? 'adjust' : 'check_circle'}
                     </span>
-                    <span className="text-white font-bold">{col.label}</span>
+                    <span className="text-white font-bold truncate">{col.label}</span>
                   </div>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      isCompleted ? 'bg-gray-600 text-gray-300' : 'bg-primary/20 text-primary'
-                    }`}
-                  >
-                    {items.length}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        isCompleted ? 'bg-gray-600 text-gray-300' : 'bg-primary/20 text-primary'
+                      }`}
+                    >
+                      {items.length}
+                    </span>
+                    {isCompleted && items.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowClearCompletedConfirm(true)}
+                        disabled={clearingCompleted}
+                        className="p-1.5 rounded-lg text-gray-500 hover:bg-red-500/20 hover:text-red-400 transition-colors disabled:opacity-50"
+                        aria-label="完了タスクを一括削除"
+                        title="完了を削除して綺麗にする"
+                      >
+                        <span className="material-symbols-outlined text-lg">delete</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div
                   className="flex-1 p-4 space-y-3 min-h-[200px]"
@@ -313,6 +344,50 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
           })}
         </div>
       </div>
+
+      {showClearCompletedConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+          onClick={() => !clearingCompleted && setShowClearCompletedConfirm(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-card-bg border border-white/10 p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 size-12 rounded-2xl bg-red-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-black text-white mb-1">完了タスクの削除</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  完了のタスク <span className="font-bold text-white">{byStatus.completed.length}</span> 件を削除しますか？
+                  この操作は取り消せません。
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowClearCompletedConfirm(false)}
+                disabled={clearingCompleted}
+                className="px-4 py-2.5 rounded-xl bg-white/5 text-gray-400 text-sm font-bold hover:bg-white/10 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleClearCompleted}
+                disabled={clearingCompleted}
+                className="px-4 py-2.5 rounded-xl bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">{clearingCompleted ? 'sync' : 'delete'}</span>
+                {clearingCompleted ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
