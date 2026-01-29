@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"sherpa-backend/internal/database"
@@ -153,6 +154,7 @@ func OAuthCallback(c *gin.Context) {
 	if redirectURL == "" {
 		redirectURL = "http://localhost:5173"
 	}
+	redirectURL = strings.TrimSuffix(redirectURL, "/")
 
 	c.Redirect(http.StatusFound, redirectURL+"/auth/callback?token="+url.QueryEscape(jwtToken))
 }
