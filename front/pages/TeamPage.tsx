@@ -440,7 +440,7 @@ function MemberRow({ staff }: MemberRowProps) {
       <div className="flex items-center gap-3 min-w-0">
         <div className="size-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
           {user?.avatar_url ? (
-            <img src={user.avatar_url} alt="" className="size-full object-cover" />
+            <img src={user.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
           ) : (
             <span className="text-white font-bold text-lg">{(name || '?').slice(0, 1)}</span>
           )}

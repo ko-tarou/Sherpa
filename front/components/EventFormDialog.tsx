@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { apiClient } from '../services/api';
+import { toDatetimeLocal } from '../utils/dateUtils';
+import DateTimePicker from './DateTimePicker';
 
 interface EventFormDialogProps {
   isOpen: boolean;
@@ -32,8 +34,8 @@ const EventFormDialog: React.FC<EventFormDialogProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
-    start_at: initialData?.start_at || '',
-    end_at: initialData?.end_at || '',
+    start_at: initialData?.start_at ? toDatetimeLocal(new Date(initialData.start_at)) : '',
+    end_at: initialData?.end_at ? toDatetimeLocal(new Date(initialData.end_at)) : '',
     location: initialData?.location || '',
   });
   const [creating, setCreating] = useState(false);
@@ -120,30 +122,19 @@ const EventFormDialog: React.FC<EventFormDialogProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-2">
-                開始日時 <span className="text-primary">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={formData.start_at}
-                onChange={(e) => setFormData({ ...formData, start_at: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-300 mb-2">
-                終了日時 <span className="text-primary">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={formData.end_at}
-                onChange={(e) => setFormData({ ...formData, end_at: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors"
-                required
-              />
-            </div>
+            <DateTimePicker
+              label="開始日時 *"
+              value={formData.start_at}
+              onChange={(v) => setFormData({ ...formData, start_at: v })}
+              placeholder="日時を選択"
+            />
+            <DateTimePicker
+              label="終了日時 *"
+              value={formData.end_at}
+              onChange={(v) => setFormData({ ...formData, end_at: v })}
+              placeholder="日時を選択"
+              min={formData.start_at || undefined}
+            />
           </div>
 
           <div>

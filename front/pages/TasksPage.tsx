@@ -3,6 +3,7 @@ import { Task } from '../types';
 import { useTasks } from '../hooks/useTasks';
 import { formatDeadlineShort, formatCompletedAt, deadlineToDatetimeLocal, toDatetimeLocal } from '../utils/dateUtils';
 import { apiClient } from '../services/api';
+import DateTimePicker from '../components/DateTimePicker';
 
 type Status = 'todo' | 'in_progress' | 'completed';
 
@@ -20,21 +21,13 @@ const DeadlineEditor: React.FC<{
   const [v, setV] = useState(initial);
   return (
     <div className="mt-2 flex items-center gap-2 flex-wrap">
-      <input
-        type="datetime-local"
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        className="px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none focus:border-primary"
-        autoFocus
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') onSave(v);
-          if (e.key === 'Escape') onCancel();
-        }}
-      />
-      <button type="button" onClick={() => onSave(v)} className="text-xs text-primary hover:underline">
+      <div className="min-w-0 flex-1">
+        <DateTimePicker value={v} onChange={setV} placeholder="日時を選択" compact />
+      </div>
+      <button type="button" onClick={() => onSave(v)} className="text-xs text-primary hover:underline font-bold">
         保存
       </button>
-      <button type="button" onClick={onCancel} className="text-xs text-gray-500 hover:text-white">
+      <button type="button" onClick={onCancel} className="text-xs text-gray-500 hover:text-white font-bold">
         キャンセル
       </button>
     </div>
@@ -228,12 +221,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
               onCompositionEnd={onNewTaskCompositionEnd}
             />
             <div className="mt-3">
-              <label className="block text-xs font-bold text-gray-400 mb-1">締め切り</label>
-              <input
-                type="datetime-local"
+              <DateTimePicker
+                label="締め切り"
                 value={newTaskDeadline}
-                onChange={(e) => setNewTaskDeadline(e.target.value)}
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary"
+                onChange={setNewTaskDeadline}
+                placeholder="日時を選択"
               />
             </div>
             <div className="flex gap-2 mt-3">
@@ -529,7 +521,7 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
             title={task.assignee.name}
           >
             {task.assignee.avatar_url ? (
-              <img src={task.assignee.avatar_url} alt="" className="size-full object-cover" />
+              <img src={task.assignee.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
             ) : (
               (task.assignee.name || '?').slice(0, 1)
             )}

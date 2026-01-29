@@ -616,7 +616,7 @@ function MessageRow({ message }: { message: Message }) {
     <div className="flex gap-3">
       <div className="shrink-0 size-9 rounded-full bg-primary/20 border border-white/20 flex items-center justify-center overflow-hidden">
         {sender?.avatar_url ? (
-          <img src={sender.avatar_url} alt="" className="size-full object-cover" />
+          <img src={sender.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
         ) : (
           <span className="text-primary font-bold text-sm">{(name || '?').slice(0, 1)}</span>
         )}

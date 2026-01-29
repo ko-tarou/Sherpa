@@ -141,11 +141,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, events, sele
         </button>
         
         <div className="mt-4 p-3 bg-white/5 rounded-2xl flex items-center gap-3">
-          <div
-            className="size-10 rounded-full bg-cover bg-center border border-white/20 flex items-center justify-center bg-primary/20"
-            style={user.avatar_url ? { backgroundImage: `url('${user.avatar_url}')` } : undefined}
-          >
-            {!user.avatar_url && (
+          <div className="size-10 rounded-full border border-white/20 flex items-center justify-center bg-primary/20 overflow-hidden shrink-0">
+            {user.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
               <span className="material-symbols-outlined text-primary text-xl">person</span>
             )}
           </div>
