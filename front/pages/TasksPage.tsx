@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Task } from '../types';
 import { useTasks } from '../hooks/useTasks';
 import { formatDeadlineShort, formatCompletedAt, deadlineToDatetimeLocal, toDatetimeLocal } from '../utils/dateUtils';
@@ -63,6 +63,17 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   const [dropTargetCol, setDropTargetCol] = useState<Status | null>(null);
   const [clearingCompleted, setClearingCompleted] = useState(false);
   const [showClearCompletedConfirm, setShowClearCompletedConfirm] = useState(false);
+  const isComposingRef = useRef(false);
+
+  const onNewTaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isComposingRef.current) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateTask();
+    }
+  };
+  const onNewTaskCompositionStart = () => { isComposingRef.current = true; };
+  const onNewTaskCompositionEnd = () => { setTimeout(() => { isComposingRef.current = false; }, 0); };
 
   useEffect(() => {
     if (!menuTaskId) return;
@@ -212,7 +223,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
               onChange={(e) => setNewTaskTitle(e.target.value)}
               placeholder="タスク名を入力"
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary"
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
+              onKeyDown={onNewTaskKeyDown}
+              onCompositionStart={onNewTaskCompositionStart}
+              onCompositionEnd={onNewTaskCompositionEnd}
             />
             <div className="mt-3">
               <label className="block text-xs font-bold text-gray-400 mb-1">締め切り</label>
@@ -431,10 +444,10 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
 
   return (
     <div
-      className={`relative rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-white/20 transition-all ${isDragging ? 'opacity-50' : ''} ${!isCompleted ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`relative rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-white/20 transition-all ${isDragging ? 'opacity-50' : ''} ${!editingDeadline && !menuOpen ? 'cursor-grab active:cursor-grabbing' : ''}`}
       data-task-menu
-      draggable={!isCompleted && !editingDeadline && !menuOpen}
-      onDragStart={(e) => !isCompleted && !editingDeadline && !menuOpen && onDragStart(e)}
+      draggable={!editingDeadline && !menuOpen}
+      onDragStart={(e) => !editingDeadline && !menuOpen && onDragStart(e)}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -447,7 +460,8 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
         >
           {isCompleted ? 'COMPLETED' : task.is_ai_generated ? 'AI' : '通常'}
         </span>
-        {!isCompleted && (
+        <div className="flex items-center gap-1 shrink-0">
+          {isCompleted && <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>}
           <button
             onClick={(e) => { e.stopPropagation(); onMenuToggle(); }}
             className="p-1 rounded-lg text-gray-500 hover:bg-white/10 hover:text-white transition-colors"
@@ -455,13 +469,10 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
           >
             <span className="material-symbols-outlined text-lg">more_vert</span>
           </button>
-        )}
-        {isCompleted && (
-          <span className="material-symbols-outlined text-green-500 text-xl">check_circle</span>
-        )}
+        </div>
       </div>
 
-      {menuOpen && !isCompleted && (
+      {menuOpen && (
         <div
           className="absolute top-10 right-2 z-10 rounded-xl bg-card-bg border border-white/10 shadow-xl py-1 min-w-[140px]"
           onClick={(e) => e.stopPropagation()}
