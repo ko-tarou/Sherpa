@@ -34,7 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [settingsEventId, setSettingsEventId] = useState<number | null>(null);
+  const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const eventDropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchUnreadCount = useCallback(() => {
     apiClient.getUnreadNotificationCount().then((r) => setUnreadCount(r.count)).catch(() => setUnreadCount(0));
@@ -57,6 +59,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     if (!notificationsOpen) fetchUnreadCount();
   }, [notificationsOpen, fetchUnreadCount]);
+
+  useEffect(() => {
+    if (!eventDropdownOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (eventDropdownRef.current?.contains(e.target as Node)) return;
+      setEventDropdownOpen(false);
+    };
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
+  }, [eventDropdownOpen]);
+
+  const useCompactEventSelect = events.length >= 2;
+  const currentEvent = selectedEventId != null
+    ? events.find((e) => e.id === selectedEventId)
+    : events[0] ?? null;
+
   const navItems = [
     { type: NavItemType.DASHBOARD, label: 'ダッシュボード', icon: 'grid_view' },
     { type: NavItemType.TASKS, label: 'タスク', icon: 'assignment' },
@@ -108,42 +126,98 @@ const Sidebar: React.FC<SidebarProps> = ({
         {events.length > 0 && (
           <div className="px-4 mt-6">
             <p className="text-xs text-gray-500 font-bold mb-2 px-4">イベント選択</p>
-            <div className="space-y-1">
-              {events.map((event) => (
+            {useCompactEventSelect ? (
+              <div ref={eventDropdownRef} className="relative">
                 <div
-                  key={event.id}
-                  className={`flex items-center gap-1 w-full rounded-lg transition-all group ${
-                    selectedEventId === event.id
-                      ? 'bg-primary text-white'
-                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1 w-full rounded-lg transition-all group bg-primary text-white`}
                 >
                   <button
                     type="button"
-                    onClick={() => onEventSelect(event.id)}
-                    className="flex-1 min-w-0 text-left px-4 py-2"
+                    onClick={() => setEventDropdownOpen((o) => !o)}
+                    className="flex-1 min-w-0 text-left px-4 py-2 flex items-center gap-1"
                   >
-                    <p className="text-sm font-medium truncate">{event.title}</p>
+                    <p className="text-sm font-medium truncate">
+                      {currentEvent?.title ?? '—'}
+                    </p>
+                    <span className="text-sm font-medium shrink-0">…</span>
                   </button>
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSettingsEventId(event.id);
+                      setEventDropdownOpen(false);
+                      if (currentEvent) setSettingsEventId(currentEvent.id);
                     }}
-                    className={`p-2 rounded-lg shrink-0 transition-colors ${
-                      selectedEventId === event.id
-                        ? 'hover:bg-white/20'
-                        : 'hover:bg-white/10 text-gray-400 group-hover:text-white'
-                    }`}
+                    className="p-2 rounded-lg shrink-0 transition-colors hover:bg-white/20"
                     title="イベント設定"
                     aria-label="イベント設定"
                   >
                     <span className="material-symbols-outlined text-lg">settings</span>
                   </button>
                 </div>
-              ))}
-            </div>
+                {eventDropdownOpen && (
+                  <div
+                    className="absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-white/10 bg-card-bg shadow-xl overflow-hidden max-h-64 overflow-y-auto"
+                    style={{ backgroundColor: '#111113' }}
+                  >
+                    {events.map((event) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => {
+                          onEventSelect(event.id);
+                          setEventDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${
+                          selectedEventId === event.id
+                            ? 'bg-primary/20 text-white'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        <p className="truncate">{event.title}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className={`flex items-center gap-1 w-full rounded-lg transition-all group ${
+                      selectedEventId === event.id
+                        ? 'bg-primary text-white'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onEventSelect(event.id)}
+                      className="flex-1 min-w-0 text-left px-4 py-2"
+                    >
+                      <p className="text-sm font-medium truncate">{event.title}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSettingsEventId(event.id);
+                      }}
+                      className={`p-2 rounded-lg shrink-0 transition-colors ${
+                        selectedEventId === event.id
+                          ? 'hover:bg-white/20'
+                          : 'hover:bg-white/10 text-gray-400 group-hover:text-white'
+                      }`}
+                      title="イベント設定"
+                      aria-label="イベント設定"
+                    >
+                      <span className="material-symbols-outlined text-lg">settings</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
