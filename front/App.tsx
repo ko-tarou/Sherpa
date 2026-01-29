@@ -189,7 +189,12 @@ function EventMainContent({
 
   switch (activeTab) {
     case NavItemType.DASHBOARD:
-      return <DashboardPage event={event} />;
+      return (
+        <DashboardPage
+          event={event}
+          onViewAllTasks={() => replace(eventPath(validEventId!, NavItemType.TASKS))}
+        />
+      );
     case NavItemType.TASKS:
       return <TasksPage eventId={validEventId} />;
     case NavItemType.BUDGET:
@@ -199,7 +204,12 @@ function EventMainContent({
     case NavItemType.CHAT:
       return <ChatPage eventId={validEventId} event={event} user={user} />;
     default:
-      return <DashboardPage event={event} />;
+      return (
+        <DashboardPage
+          event={event}
+          onViewAllTasks={() => replace(eventPath(validEventId!, NavItemType.TASKS))}
+        />
+      );
   }
 }
 

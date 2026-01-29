@@ -9,9 +9,10 @@ import { useTasks } from '../hooks/useTasks';
 
 interface DashboardPageProps {
   event: Event;
+  onViewAllTasks?: () => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ event, onViewAllTasks }) => {
   const { tasks, loading: tasksLoading } = useTasks(event.id);
   
   const countdownDays = useMemo(() => {
@@ -44,9 +45,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
 
   const priorityTasks = useMemo(() => {
     return tasks
-      .filter(task => task.status !== 'completed')
+      .filter((task) => task.status === 'in_progress')
       .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-      .slice(0, 6);
+      .slice(0, 2);
   }, [tasks]);
 
   const staffCount = useMemo(() => {
@@ -77,6 +78,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
               eventTitle={event.title}
               eventId={event.id}
               loading={tasksLoading}
+              onViewAll={onViewAllTasks}
             />
           </div>
 

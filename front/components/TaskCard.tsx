@@ -9,9 +9,10 @@ interface TaskCardProps {
   eventTitle: string;
   eventId: number;
   loading?: boolean;
+  onViewAll?: () => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading, onViewAll }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAiGeneration = async () => {
@@ -59,7 +60,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading
                 <span className="material-symbols-outlined text-sm">{isGenerating ? 'sync' : 'auto_awesome'}</span>
                 {isGenerating ? '生成中...' : 'AIタスク提案'}
             </button>
-            <button className="text-sm font-bold text-gray-500 hover:text-primary transition-colors">すべて見る</button>
+            <button
+              type="button"
+              onClick={onViewAll}
+              className="text-sm font-bold text-gray-500 hover:text-primary transition-colors"
+            >
+              すべて見る
+            </button>
         </div>
       </div>
       
