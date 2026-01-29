@@ -67,6 +67,15 @@ function EventLayout({
     navigateToEvent(id, slugToTab(slug) ?? undefined);
   };
 
+  const onEventDeleted = (deletedId: number) => {
+    reloadEvents();
+    if (selectedEventId === deletedId) {
+      const rest = events.filter((e) => e.id !== deletedId);
+      if (rest.length > 0) replace(eventPath(rest[0].id, NavItemType.DASHBOARD));
+      else replace('/event');
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden text-gray-100 font-display" style={{ backgroundColor: '#0A0A0B', color: '#f3f4f6' }}>
       <Sidebar
@@ -79,6 +88,8 @@ function EventLayout({
         user={user}
         onLogout={logout}
         onInviteAccepted={onInviteAccepted}
+        onEventUpdated={reloadEvents}
+        onEventDeleted={onEventDeleted}
       />
       <main className="flex-1 overflow-y-auto">
         <EventMainContent
