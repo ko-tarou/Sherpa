@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import TasksPage from './pages/TasksPage';
@@ -76,6 +76,12 @@ function EventLayout({
     }
   };
 
+  const reloadEventRef = useRef<(() => void) | null>(null);
+  const onEventUpdated = (updatedEventId: number) => {
+    reloadEvents();
+    if (updatedEventId === selectedEventId) reloadEventRef.current?.();
+  };
+
   return (
     <div className="flex h-screen overflow-hidden text-gray-100 font-display" style={{ backgroundColor: '#0A0A0B', color: '#f3f4f6' }}>
       <Sidebar
@@ -88,7 +94,7 @@ function EventLayout({
         user={user}
         onLogout={logout}
         onInviteAccepted={onInviteAccepted}
-        onEventUpdated={reloadEvents}
+        onEventUpdated={onEventUpdated}
         onEventDeleted={onEventDeleted}
       />
       <main className="flex-1 overflow-y-auto">
@@ -96,6 +102,7 @@ function EventLayout({
           events={events}
           user={user}
           reloadEvents={reloadEvents}
+          reloadEventRef={reloadEventRef}
           parsed={parsed}
           replace={replace}
           onCreateClick={() => setShowCreateEventChat(true)}
@@ -109,6 +116,7 @@ function EventMainContent({
   events,
   user,
   reloadEvents,
+  reloadEventRef,
   parsed,
   replace,
   onCreateClick,
@@ -116,6 +124,7 @@ function EventMainContent({
   events: { id: number }[];
   user: { id: number; name: string; email: string; avatar_url?: string };
   reloadEvents: () => void;
+  reloadEventRef: React.MutableRefObject<(() => void) | null>;
   parsed: { eventId: number | null; tab: string | null };
   replace: (path: string) => void;
   onCreateClick: () => void;
@@ -133,6 +142,13 @@ function EventMainContent({
   }, [parsed.tab]);
 
   const { event, loading: eventLoading, reload: reloadEvent } = useEvent(validEventId);
+
+  useEffect(() => {
+    reloadEventRef.current = reloadEvent;
+    return () => {
+      reloadEventRef.current = null;
+    };
+  }, [reloadEventRef, reloadEvent]);
 
   useEffect(() => {
     if (events.length === 0) return;

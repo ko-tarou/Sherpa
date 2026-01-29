@@ -14,7 +14,7 @@ interface SidebarProps {
   user: User;
   onLogout: () => void;
   onInviteAccepted?: () => void;
-  onEventUpdated?: () => void;
+  onEventUpdated?: (updatedEventId: number) => void;
   onEventDeleted?: (deletedId: number) => void;
 }
 
@@ -151,8 +151,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           isOpen={settingsEventId != null}
           onClose={() => setSettingsEventId(null)}
           event={events.find((e) => e.id === settingsEventId!) ?? null}
-          onUpdated={() => {
-            onEventUpdated?.();
+          onUpdated={(id) => {
+            onEventUpdated?.(id);
           }}
           onDeleted={(id) => {
             setSettingsEventId(null);

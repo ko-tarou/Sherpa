@@ -4,6 +4,7 @@ import CountdownCard from '../components/CountdownCard';
 import TaskCard from '../components/TaskCard';
 import BudgetCard from '../components/BudgetCard';
 import { calculateDaysUntil } from '../utils/dateUtils';
+import { getEventStatusLabel } from '../utils/eventStatus';
 import { useTasks } from '../hooks/useTasks';
 
 interface DashboardPageProps {
@@ -116,9 +117,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event }) => {
             <div>
               <p className="text-xs text-gray-500 font-bold">ステータス</p>
               <p className="text-xl font-black text-green-500">
-                {event.status === 'ongoing' ? '開催中' : 
-                 event.status === 'completed' ? '完了' : 
-                 event.status === 'cancelled' ? 'キャンセル' : '準備中'}
+                {getEventStatusLabel(event.status)}
               </p>
             </div>
           </div>

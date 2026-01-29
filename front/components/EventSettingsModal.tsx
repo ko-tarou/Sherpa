@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import { toDatetimeLocal } from '../utils/dateUtils';
+import { EVENT_STATUS_LABELS } from '../utils/eventStatus';
 import DateTimePicker from './DateTimePicker';
 import type { Event } from '../types';
 
@@ -12,19 +13,16 @@ function toRFC3339(local: string): string {
   return s;
 }
 
-const STATUS_OPTIONS: { value: Event['status']; label: string }[] = [
-  { value: 'draft', label: '下書き' },
-  { value: 'published', label: '公開済み' },
-  { value: 'ongoing', label: '開催中' },
-  { value: 'completed', label: '終了' },
-  { value: 'cancelled', label: 'キャンセル' },
-];
+const STATUS_OPTIONS = (Object.entries(EVENT_STATUS_LABELS) as [Event['status'], string][]).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 interface EventSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   event: Event | null;
-  onUpdated: () => void;
+  onUpdated: (updatedEventId: number) => void;
   onDeleted: (deletedId: number) => void;
 }
 
@@ -82,7 +80,7 @@ const EventSettingsModal: React.FC<EventSettingsModalProps> = ({
         location: location.trim() || undefined,
         status,
       });
-      onUpdated();
+      onUpdated(event.id);
       onClose();
     } catch (e: any) {
       setError(e.message ?? '更新に失敗しました');
