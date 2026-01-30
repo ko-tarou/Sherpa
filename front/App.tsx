@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DashboardPage from './pages/DashboardPage';
+import DashboardSkeleton from './components/DashboardSkeleton';
 import TasksPage from './pages/TasksPage';
 import BudgetPage from './pages/BudgetPage';
 import TeamPage from './pages/TeamPage';
@@ -180,6 +181,9 @@ function EventMainContent({
     );
   }
   if (eventLoading || !event) {
+    if (activeTab === NavItemType.DASHBOARD) {
+      return <DashboardSkeleton />;
+    }
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-gray-500">読み込み中...</div>

@@ -73,7 +73,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading
       
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">{t('loading')}</div>
+          <>
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-5 p-6 rounded-2xl bg-white/5 border border-white/5 animate-pulse"
+              >
+                <div className="size-7 rounded-lg bg-white/10" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 w-3/4 rounded bg-white/10" />
+                  <div className="h-4 w-24 rounded bg-white/10" />
+                </div>
+                <div className="size-5 rounded bg-white/10" />
+              </div>
+            ))}
+          </>
         ) : tasks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">{t('noTasks')}</div>
         ) : (
