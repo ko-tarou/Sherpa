@@ -30,6 +30,77 @@ const DeadlineEditor: React.FC<{
   );
 };
 
+const TitleEditDialog: React.FC<{
+  task: Task;
+  onSave: (v: string) => void;
+  onCancel: () => void;
+}> = ({ task, onSave, onCancel }) => {
+  const { t } = useTranslation();
+  const [v, setV] = useState(task.title);
+  const inputRef = React.useRef<HTMLTextAreaElement>(null);
+  const isComposingRef = React.useRef(false);
+
+  React.useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const handleSubmit = () => {
+    if (v.trim()) onSave(v.trim());
+    else onCancel();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-card-bg border border-white/10 p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-black text-white mb-4">{t('editTaskTitle')}</h3>
+        <textarea
+          ref={inputRef}
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              onCancel();
+              return;
+            }
+            if (e.key === 'Enter' && !e.shiftKey && !isComposingRef.current) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={() => { setTimeout(() => { isComposingRef.current = false; }, 0); }}
+          placeholder={t('taskPlaceholder')}
+          rows={3}
+          className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary resize-none"
+        />
+        <div className="flex gap-3 mt-4 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2.5 rounded-xl bg-white/10 text-gray-400 font-bold hover:bg-white/15"
+          >
+            {t('cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!v.trim()}
+            className="px-4 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 disabled:opacity-50"
+          >
+            {t('save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface TasksPageProps {
   eventId: number;
@@ -54,6 +125,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   });
   const [menuTaskId, setMenuTaskId] = useState<number | null>(null);
   const [editingDeadlineId, setEditingDeadlineId] = useState<number | null>(null);
+  const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<number | null>(null);
   const [dropTargetCol, setDropTargetCol] = useState<Status | null>(null);
   const [clearingCompleted, setClearingCompleted] = useState(false);
@@ -123,6 +195,12 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
     const iso = new Date(localValue).toISOString();
     setEditingDeadlineId(null);
     await updateTask(task.id, { ...task, deadline: iso });
+  };
+
+  const handleTitleChange = async (task: Task, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    setEditingTitleId(null);
+    await updateTask(task.id, { ...task, title: newTitle.trim() });
   };
 
   const handleCreateTask = async () => {
@@ -330,6 +408,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                         isDragging={draggingTaskId === task.id}
                         menuOpen={menuTaskId === task.id}
                         editingDeadline={editingDeadlineId === task.id}
+                        editingTitle={editingTitleId === task.id}
                         onMenuToggle={() => setMenuTaskId(menuTaskId === task.id ? null : task.id)}
                         onStatusChange={(s) => handleStatusChange(task, s)}
                         onDelete={async () => {
@@ -343,6 +422,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                         onDeadlineEdit={() => setEditingDeadlineId(task.id)}
                         onDeadlineSave={(v) => handleDeadlineChange(task, v)}
                         onDeadlineCancel={() => setEditingDeadlineId(null)}
+                        onTitleEdit={() => setEditingTitleId(task.id)}
                       />
                     ))
                   )}
@@ -352,6 +432,18 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
           })}
         </div>
       </div>
+
+      {editingTitleId != null && (() => {
+        const task = tasks.find((t) => t.id === editingTitleId);
+        return task ? (
+          <TitleEditDialog
+            key={editingTitleId}
+            task={task}
+            onSave={(v) => handleTitleChange(task, v)}
+            onCancel={() => setEditingTitleId(null)}
+          />
+        ) : null;
+      })()}
 
       {showClearCompletedConfirm && (
         <div
@@ -407,6 +499,7 @@ interface TaskKanbanCardProps {
   isDragging: boolean;
   menuOpen: boolean;
   editingDeadline: boolean;
+  editingTitle: boolean;
   onMenuToggle: () => void;
   onStatusChange: (s: Status) => void;
   onDelete: () => void;
@@ -417,6 +510,7 @@ interface TaskKanbanCardProps {
   onDeadlineEdit: () => void;
   onDeadlineSave: (localValue: string) => void;
   onDeadlineCancel: () => void;
+  onTitleEdit: () => void;
 }
 
 const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
@@ -426,6 +520,7 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
   isDragging,
   menuOpen,
   editingDeadline,
+  editingTitle,
   onMenuToggle,
   onStatusChange,
   onDelete,
@@ -436,15 +531,17 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
   onDeadlineEdit,
   onDeadlineSave,
   onDeadlineCancel,
+  onTitleEdit,
 }) => {
   const { label, isDueToday, isOverdue } = formatDeadlineShort(task.deadline);
+  const isEditing = editingDeadline || editingTitle || menuOpen;
 
   return (
     <div
-      className={`relative rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-white/20 transition-all ${isDragging ? 'opacity-50' : ''} ${!editingDeadline && !menuOpen ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`relative rounded-2xl bg-white/5 border border-white/10 p-4 hover:border-white/20 transition-all ${isDragging ? 'opacity-50' : ''} ${!isEditing ? 'cursor-grab active:cursor-grabbing' : ''}`}
       data-task-menu
-      draggable={!editingDeadline && !menuOpen}
-      onDragStart={(e) => !editingDeadline && !menuOpen && onDragStart(e)}
+      draggable={!isEditing}
+      onDragStart={(e) => !isEditing && onDragStart(e)}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -492,9 +589,18 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
         </div>
       )}
 
-      <p className={`mt-2 font-bold ${isCompleted ? 'line-through text-gray-500' : 'text-white'}`}>
-        {task.title}
-      </p>
+      <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onTitleEdit(); }}
+          className={`mt-2 text-left w-full font-bold group flex items-center gap-1 ${
+            isCompleted ? 'line-through text-gray-500' : 'text-white hover:text-primary/90'
+          }`}
+        >
+          {task.title}
+          <span className="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            edit
+          </span>
+        </button>
 
       {isCompleted ? (
         <p className="mt-1 text-xs text-gray-500">{formatCompletedAt(task.updated_at)}</p>
