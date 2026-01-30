@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Event, User, Channel, Message, ChannelMember, EventStaff } from '../types';
+import { Event, User, Channel, Message, MessageReaction, ChannelMember, EventStaff } from '../types';
 import { apiClient } from '../services/api';
 import { formatMessageTime } from '../utils/dateUtils';
-import { useChatWebSocket } from '../hooks/useChatWebSocket';
+import { useChatWebSocket, type ReactionPayload } from '../hooks/useChatWebSocket';
 
 const SHERPA_TOKEN_KEY = 'sherpa_token';
 
@@ -22,13 +22,26 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   const [sending, setSending] = useState(false);
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [showChannelSettings, setShowChannelSettings] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Map<number, string>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
   const prevChannelIdRef = useRef<number | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem(SHERPA_TOKEN_KEY) : null;
-  const { connected, lastError, join, leave, subscribeMessages } = useChatWebSocket(user ? token : null);
+  const {
+    connected,
+    lastError,
+    join,
+    leave,
+    subscribeMessages,
+    subscribeMessageUpdated,
+    subscribeMessageDeleted,
+    subscribeReaction,
+    subscribeTyping,
+    sendTyping,
+  } = useChatWebSocket(user ? token : null);
 
   const staffs = event.event_staffs ?? [];
   const isAdmin = staffs.some((s: EventStaff) => s.user_id === user.id && s.role === 'Admin');
@@ -82,11 +95,66 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   }, [selectedChannel?.id, subscribeMessages]);
 
   useEffect(() => {
+    subscribeMessageUpdated((m) => {
+      if (!selectedChannel || m.channel_id !== selectedChannel.id) return;
+      setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+    });
+  }, [selectedChannel?.id, subscribeMessageUpdated]);
+
+  useEffect(() => {
+    subscribeMessageDeleted((messageId) => {
+      setMessages((prev) => prev.filter((x) => x.id !== messageId));
+    });
+  }, [subscribeMessageDeleted]);
+
+  useEffect(() => {
+    subscribeReaction((p: ReactionPayload) => {
+      const pa = p as Record<string, unknown>;
+      if (pa.action === 'remove' && typeof pa.message_id === 'number' && typeof pa.user_id === 'number' && typeof pa.emoji === 'string') {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== pa.message_id) return m;
+            const reactions = (m.reactions ?? []).filter((r) => !(r.user_id === pa.user_id && r.emoji === pa.emoji));
+            return { ...m, reactions };
+          })
+        );
+      } else if ('message_id' in pa && 'id' in pa) {
+        const r = p as MessageReaction;
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== r.message_id) return m;
+            const existing = (m.reactions ?? []).some((x) => x.id === r.id);
+            if (existing) return m;
+            return { ...m, reactions: [...(m.reactions ?? []), r] };
+          })
+        );
+      }
+    });
+  }, [subscribeReaction]);
+
+  useEffect(() => {
+    subscribeTyping((p) => {
+      if (!selectedChannel || p.user_id === user.id) return;
+      setTypingUsers((prev) => {
+        const next = new Map(prev);
+        if (p.typing) {
+          next.set(p.user_id, p.user_name || 'ユーザー');
+        } else {
+          next.delete(p.user_id);
+        }
+        return next;
+      });
+    });
+  }, [selectedChannel?.id, subscribeTyping, user.id]);
+
+  useEffect(() => {
     if (!selectedChannel) {
       setMessages([]);
+      setTypingUsers(new Map());
       prevChannelIdRef.current = null;
       return;
     }
+    setTypingUsers(new Map());
     const prev = prevChannelIdRef.current;
     if (prev != null && prev !== selectedChannel.id) {
       leave(prev);
@@ -118,6 +186,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || !selectedChannel || sending) return;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    sendTyping(selectedChannel.id, user.name, false);
     setSending(true);
     setInput('');
     try {
@@ -147,6 +220,20 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
       isComposingRef.current = false;
     }, 0);
   };
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInput(e.target.value);
+      if (!selectedChannel) return;
+      sendTyping(selectedChannel.id, user.name, true);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping(selectedChannel.id, user.name, false);
+        typingTimeoutRef.current = null;
+      }, 2000);
+    },
+    [selectedChannel?.id, user.name, sendTyping]
+  );
 
   const publicChannels = channels.filter((c) => !c.is_private);
   const privateChannels = channels.filter((c) => c.is_private);
@@ -274,13 +361,26 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
               )}
             </header>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
               {loadingMessages ? (
                 <p className="text-gray-500 text-sm">読み込み中...</p>
               ) : (
                 <>
                   {olderMessages.map((m) => (
-                    <MessageRow key={m.id} message={m} />
+                    <MessageRow
+                      key={m.id}
+                      message={m}
+                      currentUser={user}
+                      onEdit={(id, content) => {
+                        void apiClient.updateMessage(id, content).catch(console.error);
+                      }}
+                      onDelete={(id) => {
+                        void apiClient.deleteMessage(id).catch(console.error);
+                      }}
+                      onReaction={(id) => {
+                        void apiClient.toggleReaction(id, '👍').catch(console.error);
+                      }}
+                    />
                   ))}
                   {messages.length > newerCount && (
                     <div className="flex items-center gap-3 py-2">
@@ -290,12 +390,33 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
                     </div>
                   )}
                   {newerMessages.map((m) => (
-                    <MessageRow key={m.id} message={m} />
+                    <MessageRow
+                      key={m.id}
+                      message={m}
+                      currentUser={user}
+                      onEdit={(id, content) => {
+                        void apiClient.updateMessage(id, content).catch(console.error);
+                      }}
+                      onDelete={(id) => {
+                        void apiClient.deleteMessage(id).catch(console.error);
+                      }}
+                      onReaction={(id) => {
+                        void apiClient.toggleReaction(id, '👍').catch(console.error);
+                      }}
+                    />
                   ))}
                   <div ref={messagesEndRef} />
                 </>
               )}
             </div>
+
+            {typingUsers.size > 0 && (
+              <div className="shrink-0 px-6 py-2 border-t border-white/5">
+                <p className="text-xs text-gray-500 italic">
+                  {Array.from(typingUsers.values()).join('、')} が入力中...
+                </p>
+              </div>
+            )}
 
             <div className="shrink-0 px-6 py-4 border-t border-white/10 bg-card-bg/30">
               <div className="flex gap-3">
@@ -309,7 +430,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
                 <textarea
                   ref={textareaRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyDown={onKeyDown}
                   onCompositionStart={onCompositionStart}
                   onCompositionEnd={onCompositionEnd}
@@ -666,13 +787,54 @@ const ChannelSettingsModal: React.FC<ChannelSettingsModalProps> = ({
   );
 };
 
-function MessageRow({ message }: { message: Message }) {
+interface MessageRowProps {
+  message: Message;
+  currentUser: User;
+  onEdit: (messageId: number, content: string) => void | Promise<void>;
+  onDelete: (messageId: number) => void | Promise<void>;
+  onReaction: (messageId: number) => void | Promise<void>;
+}
+
+function MessageRow({ message, currentUser, onEdit, onDelete, onReaction }: MessageRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const sender = message.user;
   const name = sender?.name ?? '不明';
   const time = formatMessageTime(message.created_at);
+  const isOwn = message.user_id === currentUser.id;
+  const reactions = message.reactions ?? [];
+  const thumbsUp = reactions.filter((r) => r.emoji === '👍');
+  const hasMyReaction = thumbsUp.some((r) => r.user_id === currentUser.id);
+
+  const handleSaveEdit = () => {
+    const trimmed = editContent.trim();
+    if (trimmed && trimmed !== message.content) {
+      onEdit(message.id, trimmed);
+    }
+    setEditing(false);
+    setEditContent(message.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+    setEditContent(message.content);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await onDelete(message.id);
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
-    <div className="flex gap-3">
+    <div className="group flex gap-3">
       <div className="shrink-0 size-9 rounded-full bg-primary/20 border border-white/20 flex items-center justify-center overflow-hidden">
         {sender?.avatar_url ? (
           <img src={sender.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
@@ -685,8 +847,100 @@ function MessageRow({ message }: { message: Message }) {
           <span className="font-bold text-white">{name}</span>
           <span className="text-xs text-gray-500">{time}</span>
         </div>
-        <p className="text-gray-300 text-sm mt-0.5 whitespace-pre-wrap break-words">{message.content}</p>
+        {editing ? (
+          <div className="mt-1 flex flex-col gap-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-primary resize-none"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                className="px-3 py-1 rounded-lg bg-primary text-white text-xs font-bold"
+              >
+                保存
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="px-3 py-1 rounded-lg bg-white/10 text-gray-400 text-xs font-bold"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-300 text-sm mt-0.5 whitespace-pre-wrap break-words">{message.content}</p>
+        )}
+        <div className="flex items-center gap-2 mt-1">
+          {thumbsUp.length > 0 && (
+            <span className="text-xs text-gray-500">
+              👍 {thumbsUp.length}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => onReaction(message.id)}
+            className={`text-sm px-2 py-0.5 rounded hover:bg-white/10 transition-colors ${hasMyReaction ? 'opacity-100' : 'opacity-50'}`}
+            title="👍"
+          >
+            👍
+          </button>
+          {isOwn && !editing && (
+            <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="text-xs text-gray-500 hover:text-white"
+              >
+                編集
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-xs text-gray-500 hover:text-red-400"
+              >
+                削除
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => !deleting && setShowDeleteConfirm(false)}
+        >
+          <div
+            className="bg-card-bg border border-white/10 rounded-2xl p-6 max-w-sm w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-white font-bold mb-4">このメッセージを削除しますか？</p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => !deleting && setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-xl bg-white/10 text-gray-400 font-bold"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-xl bg-red-500 text-white font-bold disabled:opacity-50"
+              >
+                {deleting ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

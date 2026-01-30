@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Message } from '../types';
+import type { Message, MessageReaction } from '../types';
 
 const WS_BASE = (() => {
   const u = import.meta.env.VITE_API_URL || 'http://localhost:3001';
   return u.replace(/^http/, 'ws');
 })();
 
-type WsEnvelope = { type: string; message?: Message; error?: string };
+type WsEnvelope = {
+  type: string;
+  message?: Message;
+  error?: string;
+  payload?: Record<string, unknown>;
+};
+
+export type TypingPayload = { user_id: number; user_name: string; typing: boolean };
+export type ReactionPayload = MessageReaction | { action: string; message_id: number; user_id: number; emoji: string };
 
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const INITIAL_RECONNECT_DELAY_MS = 1_000;
@@ -19,6 +27,10 @@ export function useChatWebSocket(token: string | null) {
   const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY_MS);
   const channelIdRef = useRef<number | null>(null);
   const onMessageRef = useRef<((m: Message) => void) | null>(null);
+  const onMessageUpdatedRef = useRef<((m: Message) => void) | null>(null);
+  const onMessageDeletedRef = useRef<((messageId: number) => void) | null>(null);
+  const onReactionRef = useRef<((p: ReactionPayload) => void) | null>(null);
+  const onTypingRef = useRef<((p: TypingPayload) => void) | null>(null);
   const tokenRef = useRef(token);
   tokenRef.current = token;
 
@@ -59,6 +71,15 @@ export function useChatWebSocket(token: string | null) {
         const data = JSON.parse(ev.data) as WsEnvelope;
         if (data.type === 'message' && data.message && onMessageRef.current) {
           onMessageRef.current(data.message);
+        } else if (data.type === 'message_updated' && data.payload && onMessageUpdatedRef.current) {
+          onMessageUpdatedRef.current(data.payload as unknown as Message);
+        } else if (data.type === 'message_deleted' && data.payload && onMessageDeletedRef.current) {
+          const p = data.payload as { message_id?: number };
+          if (typeof p.message_id === 'number') onMessageDeletedRef.current(p.message_id);
+        } else if (data.type === 'reaction' && data.payload && onReactionRef.current) {
+          onReactionRef.current(data.payload as unknown as ReactionPayload);
+        } else if (data.type === 'typing' && data.payload && onTypingRef.current) {
+          onTypingRef.current(data.payload as unknown as TypingPayload);
         }
         if (data.type === 'error' && data.error) {
           setLastError(data.error);
@@ -109,6 +130,29 @@ export function useChatWebSocket(token: string | null) {
   const subscribeMessages = useCallback((cb: (m: Message) => void) => {
     onMessageRef.current = cb;
   }, []);
+  const subscribeMessageUpdated = useCallback((cb: (m: Message) => void) => {
+    onMessageUpdatedRef.current = cb;
+  }, []);
+  const subscribeMessageDeleted = useCallback((cb: (messageId: number) => void) => {
+    onMessageDeletedRef.current = cb;
+  }, []);
+  const subscribeReaction = useCallback((cb: (p: ReactionPayload) => void) => {
+    onReactionRef.current = cb;
+  }, []);
+  const subscribeTyping = useCallback((cb: (p: TypingPayload) => void) => {
+    onTypingRef.current = cb;
+  }, []);
+
+  const sendTyping = useCallback((channelId: number, userName: string, isTyping: boolean) => {
+    const ws = wsRef.current;
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: isTyping ? 'typing' : 'typing_stop',
+        channel_id: channelId,
+        user_name: userName,
+      }));
+    }
+  }, []);
 
   return {
     connected,
@@ -116,5 +160,10 @@ export function useChatWebSocket(token: string | null) {
     join,
     leave,
     subscribeMessages,
+    subscribeMessageUpdated,
+    subscribeMessageDeleted,
+    subscribeReaction,
+    subscribeTyping,
+    sendTyping,
   };
 }

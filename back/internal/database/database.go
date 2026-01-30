@@ -90,6 +90,7 @@ func AutoMigrate() error {
 		&models.Channel{},
 		&models.ChannelMember{},
 		&models.Message{},
+		&models.MessageReaction{},
 	)
 
 	if err != nil {

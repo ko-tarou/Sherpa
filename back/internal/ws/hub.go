@@ -17,9 +17,9 @@ type Hub struct {
 
 // BroadcastMessage 特定チャンネルへ配信するメッセージ
 type BroadcastMessage struct {
-	ChannelID uint            `json:"-"`
-	Payload   json.RawMessage `json:"-"`
-	Raw       []byte          `json:"-"` // 送信時は Raw を使用
+	ChannelID     uint  `json:"-"`
+	Raw           []byte `json:"-"`
+	ExcludeUserID *uint  `json:"-"` // 指定時はこのユーザーを除外
 }
 
 // NewHub は Hub を生成する
@@ -88,7 +88,13 @@ func (h *Hub) Leave(c *Client, channelID uint) {
 
 // BroadcastToChannel は指定チャンネルの全クライアントにメッセージを配信する
 func (h *Hub) BroadcastToChannel(channelID uint, raw []byte) {
-	h.broadcast <- &BroadcastMessage{ChannelID: channelID, Raw: raw}
+	h.broadcast <- &BroadcastMessage{ChannelID: channelID, Raw: raw, ExcludeUserID: nil}
+}
+
+// BroadcastToChannelExcludingUser は指定ユーザーを除くチャンネルメンバーに配信する
+func (h *Hub) BroadcastToChannelExcludingUser(channelID uint, excludeUserID uint, raw []byte) {
+	uid := excludeUserID
+	h.broadcast <- &BroadcastMessage{ChannelID: channelID, Raw: raw, ExcludeUserID: &uid}
 }
 
 func (h *Hub) broadcastToChannel(b *BroadcastMessage) {
@@ -98,9 +104,11 @@ func (h *Hub) broadcastToChannel(b *BroadcastMessage) {
 		h.mu.RUnlock()
 		return
 	}
-	// 送信先をコピーしてから Unlock（送信中にロック持たない）
 	clients := make([]*Client, 0, len(m))
 	for c := range m {
+		if b.ExcludeUserID != nil && c.userID == *b.ExcludeUserID {
+			continue
+		}
 		clients = append(clients, c)
 	}
 	h.mu.RUnlock()
@@ -109,7 +117,6 @@ func (h *Hub) broadcastToChannel(b *BroadcastMessage) {
 		select {
 		case c.send <- b.Raw:
 		default:
-			// バッファ満杯ならクライアントを削除
 			h.unregister <- c
 		}
 	}
@@ -126,6 +133,7 @@ type Envelope struct {
 type ClientMessage struct {
 	Type      string `json:"type"`
 	ChannelID uint   `json:"channel_id"`
+	UserName  string `json:"user_name"`
 }
 
 // BuildMessageEvent は type: "message" のペイロードを組み立てる
@@ -158,4 +166,33 @@ func BroadcastMessageToChannel(channelID uint, msgJSON []byte) {
 	}
 	raw := BuildMessageEvent(msgJSON)
 	DefaultHub.BroadcastToChannel(channelID, raw)
+}
+
+// BuildEvent は任意の type のイベントを組み立てる
+func BuildEvent(typ string, payload []byte) []byte {
+	e := map[string]interface{}{"type": typ}
+	if len(payload) > 0 {
+		var p interface{}
+		_ = json.Unmarshal(payload, &p)
+		e["payload"] = p
+	}
+	b, _ := json.Marshal(e)
+	return b
+}
+
+// BroadcastEventToChannel は type と payload を指定してチャンネルに配信する
+func BroadcastEventToChannel(channelID uint, typ string, payload []byte) {
+	if DefaultHub == nil {
+		return
+	}
+	raw := BuildEvent(typ, payload)
+	DefaultHub.BroadcastToChannel(channelID, raw)
+}
+
+// BroadcastTypingToChannelExcluding は typing イベントを送信者以外のチャンネルメンバーに配信する
+func BroadcastTypingToChannelExcluding(channelID uint, excludeUserID uint, payload []byte) {
+	if DefaultHub == nil {
+		return
+	}
+	DefaultHub.BroadcastToChannelExcludingUser(channelID, excludeUserID, BuildEvent("typing", payload))
 }

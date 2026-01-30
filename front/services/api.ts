@@ -1,4 +1,4 @@
-import { Event, Task, Budget, EventStaff, EventInvitation, Notification, Ticket, EventParticipant, Channel, ChannelMember, Message, User } from '../types';
+import { Event, Task, Budget, EventStaff, EventInvitation, Notification, Ticket, EventParticipant, Channel, ChannelMember, Message, MessageReaction, User } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -225,6 +225,24 @@ export const apiClient = {
     return fetchAPI(`/api/channels/${channelId}/messages`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  async updateMessage(messageId: number, content: string): Promise<{ message: Message }> {
+    return fetchAPI(`/api/messages/${messageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    });
+  },
+
+  async deleteMessage(messageId: number): Promise<{ ok: boolean }> {
+    return fetchAPI(`/api/messages/${messageId}`, { method: 'DELETE' });
+  },
+
+  async toggleReaction(messageId: number, emoji?: string): Promise<{ action: string; reaction?: MessageReaction }> {
+    return fetchAPI(`/api/messages/${messageId}/reactions`, {
+      method: 'POST',
+      body: JSON.stringify(emoji ? { emoji } : {}),
     });
   },
 

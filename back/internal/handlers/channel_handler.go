@@ -140,6 +140,8 @@ func GetMessages(c *gin.Context) {
 	var list []models.Message
 	if err := database.DB.Where("channel_id = ? AND parent_message_id IS NULL AND is_deleted = ?", channelID, false).
 		Preload("User").
+		Preload("Reactions").
+		Preload("Reactions.User").
 		Order("created_at ASC").
 		Limit(100).
 		Find(&list).Error; err != nil {

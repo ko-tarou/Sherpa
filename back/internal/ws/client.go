@@ -93,6 +93,16 @@ func (c *Client) readPump() {
 				continue
 			}
 			c.hub.Leave(c, msg.ChannelID)
+		case "typing", "typing_stop":
+			if msg.ChannelID == 0 {
+				continue
+			}
+			payload, _ := json.Marshal(map[string]interface{}{
+				"user_id":   c.userID,
+				"user_name": msg.UserName,
+				"typing":    msg.Type == "typing",
+			})
+			BroadcastTypingToChannelExcluding(msg.ChannelID, c.userID, payload)
 		default:
 			c.send <- BuildErrorEvent("unknown type: " + msg.Type)
 		}

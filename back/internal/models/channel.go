@@ -62,10 +62,26 @@ type Message struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
-	Channel        Channel  `gorm:"foreignKey:ChannelID" json:"channel,omitempty"`
-	User           User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	ParentMessage  *Message `gorm:"foreignKey:ParentMessageID" json:"parent_message,omitempty"`
-	Replies        []Message `gorm:"foreignKey:ParentMessageID" json:"replies,omitempty"`
+	Channel        Channel           `gorm:"foreignKey:ChannelID" json:"channel,omitempty"`
+	User           User              `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	ParentMessage  *Message          `gorm:"foreignKey:ParentMessageID" json:"parent_message,omitempty"`
+	Replies        []Message         `gorm:"foreignKey:ParentMessageID" json:"replies,omitempty"`
+	Reactions      []MessageReaction `gorm:"foreignKey:MessageID" json:"reactions,omitempty"`
+}
+
+// MessageReaction メッセージへのリアクション（とりあえず1種類 👍）
+type MessageReaction struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	MessageID uint      `gorm:"not null;uniqueIndex:idx_message_user_emoji" json:"message_id"`
+	UserID    uint      `gorm:"not null;uniqueIndex:idx_message_user_emoji" json:"user_id"`
+	Emoji     string    `gorm:"not null;size:16;uniqueIndex:idx_message_user_emoji" json:"emoji"`
+	CreatedAt time.Time `json:"created_at"`
+
+	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+func (MessageReaction) TableName() string {
+	return "message_reactions"
 }
 
 // TableName テーブル名を指定

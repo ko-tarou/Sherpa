@@ -126,6 +126,15 @@ export interface ChannelMember {
   user?: User;
 }
 
+export interface MessageReaction {
+  id: number;
+  message_id: number;
+  user_id: number;
+  emoji: string;
+  created_at: string;
+  user?: User;
+}
+
 export interface Message {
   id: number;
   channel_id: number;
@@ -136,6 +145,7 @@ export interface Message {
   updated_at: string;
   is_deleted: boolean;
   user?: User;
+  reactions?: MessageReaction[];
 }
 
 // フロントエンド用のヘルパー型
