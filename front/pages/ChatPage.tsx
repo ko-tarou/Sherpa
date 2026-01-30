@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Event, User, Channel, Message, MessageReaction, ChannelMember, EventStaff } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { apiClient } from '../services/api';
+import ChatPageSkeleton from '../components/ChatPageSkeleton';
 import { formatMessageTime } from '../utils/dateUtils';
 import { useChatWebSocket, type ReactionPayload } from '../hooks/useChatWebSocket';
 
@@ -245,6 +246,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   const olderMessages = messages.slice(0, Math.max(0, messages.length - newerCount));
   const newerMessages = messages.slice(-newerCount);
 
+  if (loadingChannels) {
+    return <ChatPageSkeleton />;
+  }
+
   return (
     <div className="flex h-screen min-h-0 overflow-hidden bg-[#0A0A0B]">
       {/* 左サイドバー: チャンネル一覧 */}
@@ -254,10 +259,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto py-3">
-          {loadingChannels ? (
-            <p className="px-4 text-gray-500 text-sm">{t('loading')}</p>
-          ) : (
-            <>
+          <>
               <div className="px-4 mb-2 flex items-center justify-between">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">公開</p>
                 {isAdmin && (
@@ -309,8 +311,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
                   </ul>
                 </>
               )}
-            </>
-          )}
+          </>
         </div>
 
         <div className="px-4 py-3 border-t border-white/10">
@@ -365,7 +366,20 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
               {loadingMessages ? (
-                <p className="text-gray-500 text-sm">読み込み中...</p>
+                <>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex gap-3 animate-pulse">
+                      <div className="size-9 rounded-full bg-white/5 shrink-0" />
+                      <div className="flex-1 space-y-2 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <div className="h-4 w-24 rounded bg-white/5" />
+                          <div className="h-3 w-12 rounded bg-white/5" />
+                        </div>
+                        <div className="h-4 w-full max-w-md rounded bg-white/5" />
+                      </div>
+                    </div>
+                  ))}
+                </>
               ) : (
                 <>
                   {olderMessages.map((m) => (

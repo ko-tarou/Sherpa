@@ -4,6 +4,7 @@ import { useTasks } from '../hooks/useTasks';
 import { formatDeadlineShort, formatCompletedAt, deadlineToDatetimeLocal, toDatetimeLocal } from '../utils/dateUtils';
 import { apiClient } from '../services/api';
 import DateTimePicker from '../components/DateTimePicker';
+import TasksPageSkeleton from '../components/TasksPageSkeleton';
 import { useTranslation } from '../hooks/useTranslation';
 
 type Status = 'todo' | 'in_progress' | 'completed';
@@ -263,11 +264,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 md:p-12">
-        <div className="text-gray-500">読み込み中...</div>
-      </div>
-    );
+    return <TasksPageSkeleton />;
   }
 
   return (

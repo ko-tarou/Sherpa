@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import DashboardSkeleton from './components/DashboardSkeleton';
+import TasksPageSkeleton from './components/TasksPageSkeleton';
+import BudgetPageSkeleton from './components/BudgetPageSkeleton';
+import TeamPageSkeleton from './components/TeamPageSkeleton';
+import ChatPageSkeleton from './components/ChatPageSkeleton';
 import TasksPage from './pages/TasksPage';
 import BudgetPage from './pages/BudgetPage';
 import TeamPage from './pages/TeamPage';
@@ -183,6 +187,18 @@ function EventMainContent({
   if (eventLoading || !event) {
     if (activeTab === NavItemType.DASHBOARD) {
       return <DashboardSkeleton />;
+    }
+    if (activeTab === NavItemType.TASKS) {
+      return <TasksPageSkeleton />;
+    }
+    if (activeTab === NavItemType.BUDGET) {
+      return <BudgetPageSkeleton />;
+    }
+    if (activeTab === NavItemType.TEAM) {
+      return <TeamPageSkeleton />;
+    }
+    if (activeTab === NavItemType.CHAT) {
+      return <ChatPageSkeleton />;
     }
     return (
       <div className="flex items-center justify-center h-full">

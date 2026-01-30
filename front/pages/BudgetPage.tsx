@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Event, Budget } from '../types';
 import { useBudgets } from '../hooks/useBudgets';
+import BudgetPageSkeleton from '../components/BudgetPageSkeleton';
 
 const fmt = (n: number) => `¥${n.toLocaleString()}`;
 
@@ -88,11 +89,7 @@ const BudgetPage: React.FC<BudgetPageProps> = ({ eventId, event, onBudgetsChange
   };
 
   if (loading) {
-    return (
-      <div className="p-6 md:p-12">
-        <div className="text-gray-500">読み込み中...</div>
-      </div>
-    );
+    return <BudgetPageSkeleton />;
   }
 
   return (
