@@ -78,8 +78,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading
           <div className="text-center py-8 text-gray-500">{t('noTasks')}</div>
         ) : (
           tasks.map((task) => (
-          <div 
+          <div
             key={task.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onViewAll?.()}
+            onKeyDown={(e) => e.key === 'Enter' && onViewAll?.()}
             className="flex items-center gap-5 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/50 transition-all cursor-pointer group"
           >
             <div className={`size-7 border-2 border-primary rounded-lg flex items-center justify-center transition-all ${task.completed ? 'bg-primary' : 'group-hover:bg-primary/20'}`}>

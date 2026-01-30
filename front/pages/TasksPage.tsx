@@ -120,7 +120,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   const [newTaskDeadline, setNewTaskDeadline] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    d.setHours(12, 0, 0, 0);
+    d.setHours(23, 59, 0, 0);
     return toDatetimeLocal(d);
   });
   const [menuTaskId, setMenuTaskId] = useState<number | null>(null);
@@ -131,6 +131,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   const [clearingCompleted, setClearingCompleted] = useState(false);
   const [showClearCompletedConfirm, setShowClearCompletedConfirm] = useState(false);
   const isComposingRef = useRef(false);
+  const newTaskInputRef = useRef<HTMLInputElement>(null);
 
   const onNewTaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isComposingRef.current) return;
@@ -141,6 +142,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   };
   const onNewTaskCompositionStart = () => { isComposingRef.current = true; };
   const onNewTaskCompositionEnd = () => { setTimeout(() => { isComposingRef.current = false; }, 0); };
+
+  useEffect(() => {
+    if (showCreateForm) newTaskInputRef.current?.focus();
+  }, [showCreateForm]);
 
   useEffect(() => {
     if (!menuTaskId) return;
@@ -214,7 +219,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
     setNewTaskTitle('');
     const d = new Date();
     d.setDate(d.getDate() + 7);
-    d.setHours(12, 0, 0, 0);
+    d.setHours(23, 59, 0, 0);
     setNewTaskDeadline(toDatetimeLocal(d));
     setShowCreateForm(false);
   };
@@ -291,6 +296,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
         {showCreateForm && (
           <div className="mb-6 p-4 bg-card-bg border border-white/10 rounded-2xl">
             <input
+              ref={newTaskInputRef}
               type="text"
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
