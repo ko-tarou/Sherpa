@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Event } from '../types';
+import { Event, Task } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { useLang } from '../contexts/LangContext';
 import { useCalendarWebSocket } from '../hooks/useCalendarWebSocket';
 import DateTimePicker from '../components/DateTimePicker';
 import { apiClient } from '../services/api';
+import { formatDateTime } from '../utils/dateUtils';
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -22,7 +23,8 @@ interface CalendarItem {
   id: number;
   title: string;
   dateStr: string;
-  label?: string; // "開催日", "機材手配完了" など
+  label?: string;
+  task?: Task;
 }
 
 interface CalendarPageProps {
@@ -30,9 +32,10 @@ interface CalendarPageProps {
   event: Event;
   user: { id: number };
   onTaskAdded?: () => void;
+  onNavigateToTasks?: () => void;
 }
 
-export default function CalendarPage({ eventId, event, user, onTaskAdded }: CalendarPageProps) {
+export default function CalendarPage({ eventId, event, user, onTaskAdded, onNavigateToTasks }: CalendarPageProps) {
   const { t } = useTranslation();
   const { lang } = useLang();
   const reloadRef = React.useRef(onTaskAdded);
@@ -47,14 +50,15 @@ export default function CalendarPage({ eventId, event, user, onTaskAdded }: Cale
 
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addTitle, setAddTitle] = useState('');
   const [addDeadline, setAddDeadline] = useState('');
   const [adding, setAdding] = useState(false);
 
-  const openAddModal = () => {
-    const base = selectedDate ? new Date(selectedDate + 'T23:59:00') : new Date();
-    if (!selectedDate) base.setDate(base.getDate() + 1);
+  const openAddModal = (presetDate?: string) => {
+    const base = presetDate || selectedDate ? new Date((presetDate || selectedDate!) + 'T23:59:00') : new Date();
+    if (!presetDate && !selectedDate) base.setDate(base.getDate() + 1);
     setAddDeadline(`${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}T23:59`);
     setAddTitle('');
     setShowAddModal(true);
@@ -75,14 +79,15 @@ export default function CalendarPage({ eventId, event, user, onTaskAdded }: Cale
         label: t('eventDay'),
       });
     }
-    (event.tasks ?? []).forEach((t) => {
-      if (t.deadline) {
-        const d = parseDate(t.deadline);
+    (event.tasks ?? []).forEach((tk) => {
+      if (tk.deadline) {
+        const d = parseDate(tk.deadline);
         list.push({
           type: 'task',
-          id: t.id,
-          title: t.title,
+          id: tk.id,
+          title: tk.title,
           dateStr: toDateStr(d),
+          task: tk,
         });
       }
     });
@@ -208,7 +213,10 @@ export default function CalendarPage({ eventId, event, user, onTaskAdded }: Cale
                 <button
                   key={dateStr}
                   type="button"
-                  onClick={() => setSelectedDate(dateStr)}
+                  onClick={() => {
+                    setSelectedDate(dateStr);
+                    setDayDetailDate(dateStr);
+                  }}
                   className={`min-h-[100px] p-2 border-b border-r border-white/5 text-left transition-colors ${
                     !isCurrentMonth ? 'text-gray-600' : isSat ? 'text-red-400/80' : 'text-white'
                   } ${isSelected ? 'bg-primary/20 ring-1 ring-primary/50' : 'hover:bg-white/5'}`}
@@ -247,6 +255,129 @@ export default function CalendarPage({ eventId, event, user, onTaskAdded }: Cale
           </div>
         </div>
       </div>
+
+      {dayDetailDate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+          onClick={() => setDayDetailDate(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-card-bg border border-white/10 p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black text-white">
+                {t('dayDetail', {
+                  date: new Date(dayDetailDate + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ja-JP', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  }),
+                })}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDayDetailDate(null)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            {(() => {
+              const dayItems = itemsByDate[dayDetailDate] ?? [];
+              return (
+                <>
+                  {dayItems.length === 0 ? (
+                    <p className="text-gray-500 text-sm py-4">{t('noItemsOnDay')}</p>
+                  ) : (
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {dayItems.map((it) => (
+                        <div
+                          key={`${it.type}-${it.id}`}
+                          className={`p-3 rounded-xl border ${
+                            it.type === 'event'
+                              ? 'bg-primary/10 border-primary/30'
+                              : 'bg-white/5 border-white/10'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <span
+                                className={`text-xs font-bold px-2 py-0.5 rounded ${
+                                  it.type === 'event' ? 'bg-primary/30 text-white' : 'bg-white/10 text-gray-400'
+                                }`}
+                              >
+                                {it.type === 'event' ? t('eventSchedule') : t('tasks')}
+                              </span>
+                              <p className="text-white font-bold mt-1 truncate">{it.title}</p>
+                              {it.task && (
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded ${
+                                      it.task.status === 'completed'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : it.task.status === 'in_progress'
+                                          ? 'bg-blue-500/20 text-blue-400'
+                                          : 'bg-gray-500/20 text-gray-400'
+                                    }`}
+                                  >
+                                    {it.task.status === 'todo'
+                                      ? t('todo')
+                                      : it.task.status === 'in_progress'
+                                        ? t('inProgress')
+                                        : it.task.status === 'completed'
+                                          ? t('completed')
+                                          : it.task.status}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {formatDateTime(it.task.deadline)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {it.type === 'task' && onNavigateToTasks && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDayDetailDate(null);
+                                  onNavigateToTasks();
+                                }}
+                                className="shrink-0 px-2 py-1 rounded-lg bg-primary/20 text-primary text-xs font-bold hover:bg-primary/30"
+                              >
+                                {t('viewInTasks')}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDayDetailDate(null);
+                        openAddModal(dayDetailDate);
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:opacity-90"
+                    >
+                      <span className="material-symbols-outlined text-lg">add</span>
+                      {t('addTaskForDay')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDayDetailDate(null)}
+                      className="px-4 py-2.5 rounded-xl bg-white/10 text-gray-400 font-bold text-sm hover:bg-white/15"
+                    >
+                      {t('close')}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <div

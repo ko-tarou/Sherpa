@@ -251,7 +251,15 @@ function EventMainContent({
     case NavItemType.CHAT:
       return <ChatPage eventId={validEventId} event={event} user={user} />;
     case NavItemType.CALENDAR:
-      return <CalendarPage eventId={validEventId} event={event} user={user} onTaskAdded={reloadEvent} />;
+      return (
+        <CalendarPage
+          eventId={validEventId}
+          event={event}
+          user={user}
+          onTaskAdded={reloadEvent}
+          onNavigateToTasks={() => replace(eventPath(validEventId!, NavItemType.TASKS))}
+        />
+      );
     default:
       return (
         <DashboardPage

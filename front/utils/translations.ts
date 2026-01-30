@@ -110,6 +110,11 @@ export const translations: Record<LangCode, Record<string, string>> = {
     meetingTitlePlaceholder: 'ミーティング・タスク名',
     eventDay: '開催日',
     adding: '追加中...',
+    dayDetail: '{date}の予定',
+    noItemsOnDay: 'この日の予定はありません',
+    addTaskForDay: 'この日にタスクを追加',
+    viewInTasks: 'タスク画面で見る',
+    eventSchedule: 'イベント開催',
   },
   en: {
     // Common
@@ -222,6 +227,11 @@ export const translations: Record<LangCode, Record<string, string>> = {
     meetingTitlePlaceholder: 'Meeting or task name',
     eventDay: 'Event Day',
     adding: 'Adding...',
+    dayDetail: 'Schedule for {date}',
+    noItemsOnDay: 'No items on this day',
+    addTaskForDay: 'Add task for this day',
+    viewInTasks: 'View in Tasks',
+    eventSchedule: 'Event',
   },
 };
 
