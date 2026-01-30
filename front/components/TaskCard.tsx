@@ -105,8 +105,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading
                 check
               </span>
             </div>
-            <div className="flex-1">
-              <p className={`text-lg font-bold ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-white'}`}>
+            <div className="flex-1 min-w-0">
+              <p className={`text-lg font-bold truncate ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-white'}`} title={task.title}>
                 {task.title}
               </p>
               <p className={`text-sm font-bold mt-1 ${formatDeadline(task.deadline).includes('本日') ? 'text-primary' : 'text-gray-500'}`}>

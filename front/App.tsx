@@ -33,6 +33,7 @@ function NoEventsView({ onCreateClick }: { onCreateClick: () => void }) {
 
 function EventLayout({
   events,
+  eventsError,
   user,
   setShowCreateEventChat,
   reloadEvents,
@@ -43,6 +44,7 @@ function EventLayout({
   replace,
 }: {
   events: { id: number }[];
+  eventsError: boolean;
   user: { id: number; name: string; email: string; avatar_url?: string };
   setShowCreateEventChat: (v: boolean) => void;
   reloadEvents: () => void;
@@ -105,6 +107,7 @@ function EventLayout({
       <main className="flex-1 overflow-y-auto">
         <EventMainContent
           events={events}
+          eventsError={eventsError}
           user={user}
           reloadEvents={reloadEvents}
           reloadEventRef={reloadEventRef}
@@ -119,6 +122,7 @@ function EventLayout({
 
 function EventMainContent({
   events,
+  eventsError,
   user,
   reloadEvents,
   reloadEventRef,
@@ -127,6 +131,7 @@ function EventMainContent({
   onCreateClick,
 }: {
   events: { id: number }[];
+  eventsError: boolean;
   user: { id: number; name: string; email: string; avatar_url?: string };
   reloadEvents: () => void;
   reloadEventRef: React.MutableRefObject<(() => void) | null>;
@@ -167,6 +172,23 @@ function EventMainContent({
     }
   }, [events, validEventId, parsed.eventId, parsed.tab, replace]);
 
+  if (eventsError && events.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-red-400 font-bold text-lg mb-2">サーバーにアクセスできません</p>
+          <p className="text-gray-500 text-sm mb-4">通信環境を確認してから、再試行してください。</p>
+          <button
+            type="button"
+            onClick={() => reloadEvents()}
+            className="px-4 py-2 bg-primary text-white rounded-xl font-bold hover:opacity-90"
+          >
+            再試行
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (events.length === 0) return <NoEventsView onCreateClick={onCreateClick} />;
   if (parsed.eventId == null) {
     replace(eventPath(events[0].id, NavItemType.DASHBOARD));
@@ -236,7 +258,7 @@ function EventMainContent({
 const App: React.FC = () => {
   const [showCreateEventChat, setShowCreateEventChat] = React.useState(false);
   const { user, login, logout, loading: userLoading } = useUser();
-  const { events, loading: eventsLoading, reload: reloadEvents } = useEvents(user?.id ?? null);
+  const { events, loading: eventsLoading, error: eventsError, reload: reloadEvents } = useEvents(user?.id ?? null);
   const { pathname, parsed, replace, navigateToEvent } = usePath();
 
   useEffect(() => {
@@ -290,6 +312,7 @@ const App: React.FC = () => {
       {!isEventRoute ? redirectScreen : eventsLoading ? loadingScreen : (
         <EventLayout
           events={events}
+          eventsError={eventsError}
           user={user}
           setShowCreateEventChat={setShowCreateEventChat}
           reloadEvents={reloadEvents}
