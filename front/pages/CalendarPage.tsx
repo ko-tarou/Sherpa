@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Event } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { useLang } from '../contexts/LangContext';
+import { useCalendarWebSocket } from '../hooks/useCalendarWebSocket';
 import DateTimePicker from '../components/DateTimePicker';
 import { apiClient } from '../services/api';
 
@@ -27,12 +28,23 @@ interface CalendarItem {
 interface CalendarPageProps {
   eventId: number;
   event: Event;
+  user: { id: number };
   onTaskAdded?: () => void;
 }
 
-export default function CalendarPage({ eventId, event, onTaskAdded }: CalendarPageProps) {
+export default function CalendarPage({ eventId, event, user, onTaskAdded }: CalendarPageProps) {
   const { t } = useTranslation();
   const { lang } = useLang();
+  const reloadRef = React.useRef(onTaskAdded);
+  reloadRef.current = onTaskAdded ?? (() => {});
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('sherpa_token') : null;
+  useCalendarWebSocket(eventId, user ? token : null, () => reloadRef.current());
+
+  // タブ切り替え時はイベントが古い可能性があるため、マウント時に再取得
+  React.useEffect(() => {
+    reloadRef.current?.();
+  }, [eventId]);
+
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);

@@ -26,11 +26,12 @@ var upgrader = websocket.Upgrader{
 
 // Client は WebSocket 接続されたクライアント
 type Client struct {
-	hub    *Hub
-	conn   *websocket.Conn
-	send   chan []byte
-	userID uint
-	channels map[uint]struct{}
+	hub           *Hub
+	conn          *websocket.Conn
+	send          chan []byte
+	userID        uint
+	channels      map[uint]struct{}
+	eventCalendars map[uint]struct{}
 }
 
 // ServeWS は HTTP を WebSocket にアップグレードし、クライアントを起動する
@@ -42,11 +43,12 @@ func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request, userID uint) {
 	}
 
 	c := &Client{
-		hub:      hub,
-		conn:     conn,
-		send:     make(chan []byte, 256),
-		userID:   userID,
-		channels: make(map[uint]struct{}),
+		hub:            hub,
+		conn:           conn,
+		send:            make(chan []byte, 256),
+		userID:          userID,
+		channels:        make(map[uint]struct{}),
+		eventCalendars:  make(map[uint]struct{}),
 	}
 
 	go c.writePump()
@@ -93,6 +95,17 @@ func (c *Client) readPump() {
 				continue
 			}
 			c.hub.Leave(c, msg.ChannelID)
+		case "join_calendar":
+			if msg.EventID == 0 {
+				c.send <- BuildErrorEvent("event_id required")
+				continue
+			}
+			c.hub.JoinEventCalendar(c, msg.EventID)
+		case "leave_calendar":
+			if msg.EventID == 0 {
+				continue
+			}
+			c.hub.LeaveEventCalendar(c, msg.EventID)
 		case "typing", "typing_stop":
 			if msg.ChannelID == 0 {
 				continue

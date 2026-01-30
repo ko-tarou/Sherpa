@@ -10,9 +10,17 @@ import (
 type Hub struct {
 	mu sync.RWMutex
 	// channelID -> connected clients
-	channels   map[uint]map[*Client]struct{}
-	unregister chan *Client
-	broadcast  chan *BroadcastMessage
+	channels map[uint]map[*Client]struct{}
+	// eventID -> clients subscribed to calendar updates
+	eventCalendars map[uint]map[*Client]struct{}
+	unregister     chan *Client
+	broadcast      chan *BroadcastMessage
+	calendarBroadcast chan *calendarBroadcast
+}
+
+type calendarBroadcast struct {
+	EventID uint
+	Raw     []byte
 }
 
 // BroadcastMessage 特定チャンネルへ配信するメッセージ
@@ -25,9 +33,11 @@ type BroadcastMessage struct {
 // NewHub は Hub を生成する
 func NewHub() *Hub {
 	return &Hub{
-		channels:   make(map[uint]map[*Client]struct{}),
-		unregister: make(chan *Client),
-		broadcast:  make(chan *BroadcastMessage, 256),
+		channels:         make(map[uint]map[*Client]struct{}),
+		eventCalendars:   make(map[uint]map[*Client]struct{}),
+		unregister:       make(chan *Client),
+		broadcast:        make(chan *BroadcastMessage, 256),
+		calendarBroadcast: make(chan *calendarBroadcast, 64),
 	}
 }
 
@@ -40,6 +50,9 @@ func (h *Hub) Run() {
 
 		case b := <-h.broadcast:
 			h.broadcastToChannel(b)
+
+		case cb := <-h.calendarBroadcast:
+			h.broadcastToEventCalendar(cb)
 		}
 	}
 }
@@ -55,6 +68,16 @@ func (h *Hub) removeClient(c *Client) {
 		delete(m, c)
 		if len(m) == 0 {
 			delete(h.channels, chID)
+		}
+	}
+	for evID := range c.eventCalendars {
+		m, ok := h.eventCalendars[evID]
+		if !ok {
+			continue
+		}
+		delete(m, c)
+		if len(m) == 0 {
+			delete(h.eventCalendars, evID)
 		}
 	}
 	close(c.send)
@@ -83,6 +106,54 @@ func (h *Hub) Leave(c *Client, channelID uint) {
 	delete(m, c)
 	if len(m) == 0 {
 		delete(h.channels, channelID)
+	}
+}
+
+// JoinEventCalendar はクライアントをイベントカレンダー購読に参加させる
+func (h *Hub) JoinEventCalendar(c *Client, eventID uint) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.eventCalendars[eventID] == nil {
+		h.eventCalendars[eventID] = make(map[*Client]struct{})
+	}
+	h.eventCalendars[eventID][c] = struct{}{}
+	c.eventCalendars[eventID] = struct{}{}
+}
+
+// LeaveEventCalendar はクライアントをイベントカレンダー購読から退出させる
+func (h *Hub) LeaveEventCalendar(c *Client, eventID uint) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	delete(c.eventCalendars, eventID)
+	m, ok := h.eventCalendars[eventID]
+	if !ok {
+		return
+	}
+	delete(m, c)
+	if len(m) == 0 {
+		delete(h.eventCalendars, eventID)
+	}
+}
+
+func (h *Hub) broadcastToEventCalendar(cb *calendarBroadcast) {
+	h.mu.RLock()
+	m, ok := h.eventCalendars[cb.EventID]
+	if !ok || len(m) == 0 {
+		h.mu.RUnlock()
+		return
+	}
+	clients := make([]*Client, 0, len(m))
+	for c := range m {
+		clients = append(clients, c)
+	}
+	h.mu.RUnlock()
+
+	for _, c := range clients {
+		select {
+		case c.send <- cb.Raw:
+		default:
+			h.unregister <- c
+		}
 	}
 }
 
@@ -133,6 +204,7 @@ type Envelope struct {
 type ClientMessage struct {
 	Type      string `json:"type"`
 	ChannelID uint   `json:"channel_id"`
+	EventID   uint   `json:"event_id"`
 	UserName  string `json:"user_name"`
 }
 
@@ -195,4 +267,13 @@ func BroadcastTypingToChannelExcluding(channelID uint, excludeUserID uint, paylo
 		return
 	}
 	DefaultHub.BroadcastToChannelExcludingUser(channelID, excludeUserID, BuildEvent("typing", payload))
+}
+
+// BroadcastCalendarUpdate は指定イベントのカレンダー購読者に更新を配信する
+func BroadcastCalendarUpdate(eventID uint) {
+	if DefaultHub == nil {
+		return
+	}
+	raw := BuildEvent("calendar_update", []byte("{}"))
+	DefaultHub.calendarBroadcast <- &calendarBroadcast{EventID: eventID, Raw: raw}
 }

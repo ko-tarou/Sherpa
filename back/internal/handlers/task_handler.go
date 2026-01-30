@@ -7,6 +7,7 @@ import (
 	"sherpa-backend/internal/database"
 	"sherpa-backend/internal/models"
 	"sherpa-backend/internal/services"
+	"sherpa-backend/internal/ws"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,6 +52,7 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
+	ws.BroadcastCalendarUpdate(uint(eventID))
 	c.JSON(http.StatusCreated, gin.H{"task": task})
 }
 
@@ -81,6 +83,7 @@ func UpdateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	ws.BroadcastCalendarUpdate(task.EventID)
 	c.JSON(http.StatusOK, gin.H{"task": task})
 }
 
@@ -92,11 +95,18 @@ func DeleteTask(c *gin.Context) {
 		return
 	}
 
+	var task models.Task
+	if err := database.DB.First(&task, uint(id)).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		return
+	}
+
 	if err := database.DB.Delete(&models.Task{}, uint(id)).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	ws.BroadcastCalendarUpdate(task.EventID)
 	c.JSON(http.StatusOK, gin.H{"message": "Task deleted successfully"})
 }
 

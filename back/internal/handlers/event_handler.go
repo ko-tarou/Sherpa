@@ -7,6 +7,7 @@ import (
 
 	"sherpa-backend/internal/database"
 	"sherpa-backend/internal/models"
+	"sherpa-backend/internal/ws"
 
 	"github.com/gin-gonic/gin"
 )
@@ -130,6 +131,7 @@ func UpdateEvent(c *gin.Context) {
 		return
 	}
 
+	ws.BroadcastCalendarUpdate(uint(id))
 	c.JSON(http.StatusOK, gin.H{"event": event})
 }
 

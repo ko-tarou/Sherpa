@@ -251,7 +251,7 @@ function EventMainContent({
     case NavItemType.CHAT:
       return <ChatPage eventId={validEventId} event={event} user={user} />;
     case NavItemType.CALENDAR:
-      return <CalendarPage eventId={validEventId} event={event} onTaskAdded={reloadEvent} />;
+      return <CalendarPage eventId={validEventId} event={event} user={user} onTaskAdded={reloadEvent} />;
     default:
       return (
         <DashboardPage
