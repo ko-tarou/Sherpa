@@ -41,17 +41,22 @@ func (s *GeminiService) GenerateTasks(eventTitle string) ([]TaskSuggestion, erro
 
 	ctx := context.Background()
 	model := s.client.GenerativeModel("gemini-2.5-flash")
+	// JSON形式で出力させる（マークダウンや余分なテキストを防ぐ）
+	model.GenerationConfig = genai.GenerationConfig{
+		ResponseMIMEType: "application/json",
+	}
 
-	prompt := fmt.Sprintf(`Generate 3 high-priority tasks for an event titled "%s". 
-Format them as a JSON array of objects with "title" and "deadline" (e.g., "残り 2日" or "本日締め切り").
-Return only the JSON array, no other text.`, eventTitle)
+	prompt := fmt.Sprintf(`イベント「%s」の運営で必要な優先度の高いタスクを3つ生成してください。
+JSON配列形式で、各要素は "title" と "deadline" を持つオブジェクトにしてください。
+deadline は日本語で表現してください（例：「残り2日」「本日締め切り」「1週間後」）。
+JSON配列のみを返し、他のテキストは含めないでください。`, eventTitle)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}
 
-	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
+	if len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil || len(resp.Candidates[0].Content.Parts) == 0 {
 		return nil, fmt.Errorf("no content generated")
 	}
 
@@ -62,11 +67,41 @@ Return only the JSON array, no other text.`, eventTitle)
 		}
 	}
 
-	var tasks []TaskSuggestion
-	if err := json.Unmarshal([]byte(text), &tasks); err != nil {
+	tasks, err := parseTasksFromResponse(text)
+	if err != nil {
+		log.Printf("[GenerateTasks] raw response: %q", text)
 		return nil, fmt.Errorf("failed to parse AI response: %w", err)
 	}
 
+	return tasks, nil
+}
+
+// parseTasksFromResponse レスポンステキストからタスク配列を抽出（```json ブロックや生JSONに対応）
+func parseTasksFromResponse(text string) ([]TaskSuggestion, error) {
+	text = strings.TrimSpace(text)
+	// ```json ... ``` ブロックを探す
+	if idx := strings.Index(text, "```json"); idx >= 0 {
+		start := idx + 7
+		if end := strings.Index(text[start:], "```"); end >= 0 {
+			text = strings.TrimSpace(text[start : start+end])
+		}
+	} else if idx := strings.Index(text, "```"); idx >= 0 {
+		start := idx + 3
+		if end := strings.Index(text[start:], "```"); end >= 0 {
+			text = strings.TrimSpace(text[start : start+end])
+		}
+	}
+	// 先頭の [ から末尾の ] までを抽出（前後の余分なテキストを除去）
+	if i := strings.Index(text, "["); i >= 0 {
+		if j := strings.LastIndex(text, "]"); j > i {
+			text = text[i : j+1]
+		}
+	}
+
+	var tasks []TaskSuggestion
+	if err := json.Unmarshal([]byte(text), &tasks); err != nil {
+		return nil, err
+	}
 	return tasks, nil
 }
 

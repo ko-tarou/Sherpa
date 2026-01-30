@@ -5,6 +5,7 @@ import { formatDeadlineShort, formatCompletedAt, deadlineToDatetimeLocal, toDate
 import { apiClient } from '../services/api';
 import DateTimePicker from '../components/DateTimePicker';
 import TasksPageSkeleton from '../components/TasksPageSkeleton';
+import AITaskGenerateModal from '../components/AITaskGenerateModal';
 import { useTranslation } from '../hooks/useTranslation';
 
 type Status = 'todo' | 'in_progress' | 'completed';
@@ -105,9 +106,10 @@ const TitleEditDialog: React.FC<{
 
 interface TasksPageProps {
   eventId: number;
+  eventTitle: string;
 }
 
-const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
+const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
   const { t } = useTranslation();
   const columns: { key: Status; label: string; icon: string }[] = [
     { key: 'todo', label: t('todo'), icon: 'radio_button_unchecked' },
@@ -115,7 +117,6 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
     { key: 'completed', label: t('completed'), icon: 'check_circle' },
   ];
   const { tasks, loading, createTask, updateTask, deleteTask, reload } = useTasks(eventId);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState(() => {
@@ -131,6 +132,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
   const [dropTargetCol, setDropTargetCol] = useState<Status | null>(null);
   const [clearingCompleted, setClearingCompleted] = useState(false);
   const [showClearCompletedConfirm, setShowClearCompletedConfirm] = useState(false);
+  const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const isComposingRef = useRef(false);
   const newTaskInputRef = useRef<HTMLInputElement>(null);
 
@@ -240,27 +242,16 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
     }
   };
 
-  const handleGenerateTasks = async () => {
-    setIsGenerating(true);
-    try {
-      const res = await apiClient.generateTasks('イベント');
-      for (const s of res.tasks) {
-        const deadline = new Date();
-        deadline.setDate(deadline.getDate() + 7);
-        await createTask({
-          title: s.title,
-          deadline: deadline.toISOString(),
-          status: 'todo',
-          is_ai_generated: true,
-        });
-      }
-      reload();
-    } catch (e) {
-      console.error(e);
-      alert('AIタスク生成に失敗しました');
-    } finally {
-      setIsGenerating(false);
+  const handleAddAITasks = async (tasks: { title: string; deadline: string }[]) => {
+    for (const t of tasks) {
+      await createTask({
+        title: t.title,
+        deadline: t.deadline,
+        status: 'todo',
+        is_ai_generated: true,
+      });
     }
+    reload();
   };
 
   if (loading) {
@@ -274,12 +265,11 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
           <h1 className="text-3xl font-black text-white">{t('taskManagement')}</h1>
           <div className="flex gap-3">
             <button
-              onClick={handleGenerateTasks}
-              disabled={isGenerating}
+              onClick={() => setShowAIGenerateModal(true)}
               className="px-4 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-all flex items-center gap-2 text-sm font-bold"
             >
-              <span className="material-symbols-outlined text-lg">{isGenerating ? 'sync' : 'auto_awesome'}</span>
-              {isGenerating ? t('generating') : t('aiTaskGenerate')}
+              <span className="material-symbols-outlined text-lg">auto_awesome</span>
+              {t('aiTaskGenerate')}
             </button>
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
@@ -447,6 +437,16 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
           />
         ) : null;
       })()}
+
+      {showAIGenerateModal && (
+        <AITaskGenerateModal
+          isOpen={showAIGenerateModal}
+          onClose={() => setShowAIGenerateModal(false)}
+          eventTitle={eventTitle}
+          onGenerate={(title) => apiClient.generateTasks(title).then((r) => r.tasks)}
+          onAddTasks={handleAddAITasks}
+        />
+      )}
 
       {showClearCompletedConfirm && (
         <div
