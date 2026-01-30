@@ -163,5 +163,6 @@ export enum NavItemType {
   TASKS = 'TASKS',
   BUDGET = 'BUDGET',
   TEAM = 'TEAM',
-  CHAT = 'CHAT'
+  CHAT = 'CHAT',
+  CALENDAR = 'CALENDAR'
 }

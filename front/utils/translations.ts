@@ -102,6 +102,14 @@ export const translations: Record<LangCode, Record<string, string>> = {
     ongoing: '開催中',
     ended: '終了',
     cancelled: 'キャンセル',
+
+    // Calendar
+    calendar: 'カレンダー',
+    eventCalendar: 'イベントカレンダー',
+    addMeeting: 'ミーティングを追加',
+    meetingTitlePlaceholder: 'ミーティング・タスク名',
+    eventDay: '開催日',
+    adding: '追加中...',
   },
   en: {
     // Common
@@ -206,6 +214,14 @@ export const translations: Record<LangCode, Record<string, string>> = {
     ongoing: 'Ongoing',
     ended: 'Ended',
     cancelled: 'Cancelled',
+
+    // Calendar
+    calendar: 'Calendar',
+    eventCalendar: 'Event Calendar',
+    addMeeting: 'Add Meeting',
+    meetingTitlePlaceholder: 'Meeting or task name',
+    eventDay: 'Event Day',
+    adding: 'Adding...',
   },
 };
 

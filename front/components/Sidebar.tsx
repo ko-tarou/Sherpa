@@ -81,6 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { type: NavItemType.DASHBOARD, label: t('dashboard'), icon: 'grid_view' },
+    { type: NavItemType.CALENDAR, label: t('calendar'), icon: 'calendar_month' },
     { type: NavItemType.TASKS, label: t('tasks'), icon: 'assignment' },
     { type: NavItemType.BUDGET, label: t('budget'), icon: 'payments' },
     { type: NavItemType.TEAM, label: t('team'), icon: 'groups' },

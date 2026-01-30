@@ -1,6 +1,6 @@
 import { NavItemType } from './types';
 
-export const TAB_SLUGS = ['dashboard', 'tasks', 'budget', 'team', 'chat'] as const;
+export const TAB_SLUGS = ['dashboard', 'tasks', 'budget', 'team', 'chat', 'calendar'] as const;
 export type TabSlug = (typeof TAB_SLUGS)[number];
 
 const SLUG_TO_TAB: Record<TabSlug, NavItemType> = {
@@ -9,6 +9,7 @@ const SLUG_TO_TAB: Record<TabSlug, NavItemType> = {
   budget: NavItemType.BUDGET,
   team: NavItemType.TEAM,
   chat: NavItemType.CHAT,
+  calendar: NavItemType.CALENDAR,
 };
 
 const TAB_TO_SLUG: Record<NavItemType, TabSlug> = {
@@ -17,6 +18,7 @@ const TAB_TO_SLUG: Record<NavItemType, TabSlug> = {
   [NavItemType.BUDGET]: 'budget',
   [NavItemType.TEAM]: 'team',
   [NavItemType.CHAT]: 'chat',
+  [NavItemType.CALENDAR]: 'calendar',
 };
 
 export function slugToTab(slug: string): NavItemType | null {

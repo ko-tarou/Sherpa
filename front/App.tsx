@@ -6,10 +6,12 @@ import TasksPageSkeleton from './components/TasksPageSkeleton';
 import BudgetPageSkeleton from './components/BudgetPageSkeleton';
 import TeamPageSkeleton from './components/TeamPageSkeleton';
 import ChatPageSkeleton from './components/ChatPageSkeleton';
+import CalendarPageSkeleton from './components/CalendarPageSkeleton';
 import TasksPage from './pages/TasksPage';
 import BudgetPage from './pages/BudgetPage';
 import TeamPage from './pages/TeamPage';
 import ChatPage from './pages/ChatPage';
+import CalendarPage from './pages/CalendarPage';
 import CreateEventChatPage from './pages/CreateEventChatPage';
 import CreateUserPage from './pages/CreateUserPage';
 import { NavItemType } from './types';
@@ -222,6 +224,9 @@ function EventMainContent({
     if (activeTab === NavItemType.CHAT) {
       return <ChatPageSkeleton />;
     }
+    if (activeTab === NavItemType.CALENDAR) {
+      return <CalendarPageSkeleton />;
+    }
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-gray-500">読み込み中...</div>
@@ -245,6 +250,8 @@ function EventMainContent({
       return <TeamPage eventId={validEventId} event={event} user={user} />;
     case NavItemType.CHAT:
       return <ChatPage eventId={validEventId} event={event} user={user} />;
+    case NavItemType.CALENDAR:
+      return <CalendarPage eventId={validEventId} event={event} onTaskAdded={reloadEvent} />;
     default:
       return (
         <DashboardPage
