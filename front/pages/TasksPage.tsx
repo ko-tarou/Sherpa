@@ -325,6 +325,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                       <TaskKanbanCard
                         key={task.id}
                         task={task}
+                        columns={columns}
                         isCompleted={isCompleted}
                         isDragging={draggingTaskId === task.id}
                         menuOpen={menuTaskId === task.id}
@@ -401,6 +402,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
 
 interface TaskKanbanCardProps {
   task: Task;
+  columns: { key: Status; label: string; icon: string }[];
   isCompleted: boolean;
   isDragging: boolean;
   menuOpen: boolean;
@@ -419,6 +421,7 @@ interface TaskKanbanCardProps {
 
 const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
   task,
+  columns,
   isCompleted,
   isDragging,
   menuOpen,
@@ -471,7 +474,7 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
           className="absolute top-10 right-2 z-10 rounded-xl bg-card-bg border border-white/10 shadow-xl py-1 min-w-[140px]"
           onClick={(e) => e.stopPropagation()}
         >
-          {COLUMNS.filter((c) => c.key !== task.status).map((c) => (
+          {columns.filter((c) => c.key !== task.status).map((c) => (
             <button
               key={c.key}
               onClick={() => onStatusChange(c.key)}
