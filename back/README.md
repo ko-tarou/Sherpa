@@ -164,6 +164,11 @@ go build -o bin/batch ./cmd/batch
 - `PUT /api/events/:id` - イベント更新
 - `DELETE /api/events/:id` - イベント削除
 
+### チャット（WebSocket）
+- `GET /api/ws?token=JWT` - WebSocket 接続。認証後 `join` / `leave` でチャンネル参加・退出。新規メッセージは `type: "message"` で配信。
+- `GET /api/channels/:id/messages` - メッセージ履歴（HTTP）
+- `POST /api/channels/:id/messages` - 送信（HTTP）。保存後に同一チャンネルへ WebSocket でブロードキャスト。
+
 ### タスク
 - `GET /api/events/:eventId/tasks` - タスク一覧取得
 - `POST /api/events/:eventId/tasks` - タスク作成
@@ -185,7 +190,7 @@ back/
 │   ├── models/              # データモデル
 │   ├── handlers/            # HTTPハンドラー
 │   ├── services/            # ビジネスロジック
-│   ├── middleware/          # ミドルウェア
+│   ├── ws/                  # WebSocket Hub・クライアント（チャット）
 │   └── database/            # データベース接続
 ├── migrations/              # データベースマイグレーション
 └── go.mod                   # Go依存関係

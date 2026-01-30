@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Event, User, Channel, Message, ChannelMember, EventStaff } from '../types';
 import { apiClient } from '../services/api';
 import { formatMessageTime } from '../utils/dateUtils';
+import { useChatWebSocket } from '../hooks/useChatWebSocket';
+
+const SHERPA_TOKEN_KEY = 'sherpa_token';
 
 interface ChatPageProps {
   eventId: number;
@@ -22,6 +25,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
+  const prevChannelIdRef = useRef<number | null>(null);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem(SHERPA_TOKEN_KEY) : null;
+  const { connected, lastError, join, leave, subscribeMessages } = useChatWebSocket(user ? token : null);
 
   const staffs = event.event_staffs ?? [];
   const isAdmin = staffs.some((s: EventStaff) => s.user_id === user.id && s.role === 'Admin');
@@ -48,22 +55,61 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
     }
   }, [eventId]);
 
+  const fetchMessages = useCallback(async (channelId: number) => {
+    setLoadingMessages(true);
+    try {
+      const r = await apiClient.getMessages(channelId);
+      setMessages(r.messages);
+    } catch {
+      setMessages([]);
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchChannels();
   }, [fetchChannels]);
 
   useEffect(() => {
-    if (selectedChannel) {
-      setLoadingMessages(true);
-      apiClient
-        .getMessages(selectedChannel.id)
-        .then((r) => setMessages(r.messages))
-        .catch(() => setMessages([]))
-        .finally(() => setLoadingMessages(false));
-    } else {
+    subscribeMessages((m) => {
+      if (!selectedChannel || m.channel_id !== selectedChannel.id) return;
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === m.id)) return prev;
+        return [...prev, m];
+      });
+    });
+  }, [selectedChannel?.id, subscribeMessages]);
+
+  useEffect(() => {
+    if (!selectedChannel) {
       setMessages([]);
+      prevChannelIdRef.current = null;
+      return;
     }
-  }, [selectedChannel?.id]);
+    const prev = prevChannelIdRef.current;
+    if (prev != null && prev !== selectedChannel.id) {
+      leave(prev);
+    }
+    prevChannelIdRef.current = selectedChannel.id;
+    join(selectedChannel.id);
+    fetchMessages(selectedChannel.id);
+  }, [selectedChannel?.id, join, leave, fetchMessages]);
+
+  const hadConnectedBeforeRef = useRef(false);
+  const prevConnectedRef = useRef(false);
+  useEffect(() => {
+    const wasConnected = prevConnectedRef.current;
+    if (wasConnected && !connected) {
+      hadConnectedBeforeRef.current = true;
+    }
+    prevConnectedRef.current = connected;
+    const reconnected = connected && hadConnectedBeforeRef.current;
+    if (reconnected && selectedChannel) {
+      hadConnectedBeforeRef.current = false;
+      fetchMessages(selectedChannel.id);
+    }
+  }, [connected, selectedChannel?.id, fetchMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,8 +121,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
     setSending(true);
     setInput('');
     try {
-      const r = await apiClient.createMessage(selectedChannel.id, { content: text });
-      setMessages((prev) => [...prev, r.message]);
+      await apiClient.createMessage(selectedChannel.id, { content: text });
     } catch (e) {
       console.error(e);
       setInput(text);
@@ -196,9 +241,23 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
           <>
             <header className="shrink-0 px-6 py-4 border-b border-white/10 bg-card-bg/30 flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-xl font-black text-white">
-                  「{selectedChannel.name.replace(/^#/, '')}」チャンネルへようこそ
-                </h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl font-black text-white">
+                    「{selectedChannel.name.replace(/^#/, '')}」チャンネルへようこそ
+                  </h1>
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      connected
+                        ? 'bg-green-500/20 text-green-400'
+                        : lastError
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-amber-500/20 text-amber-400'
+                    }`}
+                    title={connected ? '接続中' : lastError ? lastError : '接続中…'}
+                  >
+                    {connected ? '接続中' : lastError ? 'エラー' : '接続中…'}
+                  </span>
+                </div>
                 {selectedChannel.description && (
                   <p className="text-gray-400 text-sm mt-1">{selectedChannel.description}</p>
                 )}

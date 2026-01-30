@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"sherpa-backend/internal/database"
-
 	"sherpa-backend/internal/handlers"
+	"sherpa-backend/internal/ws"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -56,6 +56,11 @@ func main() {
 		c.Next()
 	})
 
+	// WebSocket Hub（チャット用）
+	hub := ws.NewHub()
+	ws.DefaultHub = hub
+	go hub.Run()
+
 	// ヘルスチェック
 	r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -63,6 +68,9 @@ func main() {
 			"message": "Sherpa Backend API is running",
 		})
 	})
+
+	// WebSocket（認証は query token）
+	r.GET("/api/ws", handlers.WSHandler(hub))
 
 	// 管理者API（X-Admin-Key または Authorization: Bearer <ADMIN_API_KEY>）
 	admin := r.Group("/api/admin")

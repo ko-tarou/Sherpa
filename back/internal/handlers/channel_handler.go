@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"sherpa-backend/internal/database"
 	"sherpa-backend/internal/models"
+	"sherpa-backend/internal/ws"
 
 	"github.com/gin-gonic/gin"
 )
@@ -188,6 +190,11 @@ func CreateMessage(c *gin.Context) {
 		return
 	}
 	database.DB.Preload("User").First(&msg, msg.ID)
+
+	// 保存成功後、同じチャンネルのクライアントへ WebSocket で配信
+	if b, err := json.Marshal(msg); err == nil {
+		ws.BroadcastMessageToChannel(uint(channelID), b)
+	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": msg})
 }
