@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Event, User, Channel, Message, MessageReaction, ChannelMember, EventStaff } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 import { apiClient } from '../services/api';
 import { formatMessageTime } from '../utils/dateUtils';
 import { useChatWebSocket, type ReactionPayload } from '../hooks/useChatWebSocket';
@@ -43,6 +44,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
     sendTyping,
   } = useChatWebSocket(user ? token : null);
 
+  const { t, lang } = useTranslation();
   const staffs = event.event_staffs ?? [];
   const isAdmin = staffs.some((s: EventStaff) => s.user_id === user.id && s.role === 'Admin');
 
@@ -248,12 +250,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
       {/* 左サイドバー: チャンネル一覧 */}
       <aside className="w-72 shrink-0 flex flex-col border-r border-white/10 bg-card-bg/50">
         <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-lg font-black text-white">チャットルーム</h2>
+          <h2 className="text-lg font-black text-white">{t('chatRoom')}</h2>
         </div>
 
         <div className="flex-1 overflow-y-auto py-3">
           {loadingChannels ? (
-            <p className="px-4 text-gray-500 text-sm">読み込み中...</p>
+            <p className="px-4 text-gray-500 text-sm">{t('loading')}</p>
           ) : (
             <>
               <div className="px-4 mb-2 flex items-center justify-between">
@@ -413,7 +415,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
             {typingUsers.size > 0 && (
               <div className="shrink-0 px-6 py-2 border-t border-white/5">
                 <p className="text-xs text-gray-500 italic">
-                  {Array.from(typingUsers.values()).join('、')} が入力中...
+                  {Array.from(typingUsers.values()).join(lang === 'ja' ? '、' : ', ')}{t('typing')}
                 </p>
               </div>
             )}
@@ -434,7 +436,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
                   onKeyDown={onKeyDown}
                   onCompositionStart={onCompositionStart}
                   onCompositionEnd={onCompositionEnd}
-                  placeholder={`#${selectedChannel.name.replace(/^#/, '')}へのメッセージを送信...`}
+                  placeholder={t('messagePlaceholder', { channel: '#' + selectedChannel.name.replace(/^#/, '') })}
                   rows={1}
                   className="flex-1 min-h-[44px] max-h-32 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary resize-none"
                 />
@@ -444,10 +446,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ eventId, event, user }) => {
                   disabled={!input.trim() || sending}
                   className="shrink-0 px-4 py-2 rounded-xl bg-primary text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                 >
-                  送信 &gt;
+                  {t('send')} &gt;
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Enterで送信 / Shift+Enterで改行</p>
+              <p className="text-xs text-gray-500 mt-2">{t('sendHint')}</p>
             </div>
           </>
         )}

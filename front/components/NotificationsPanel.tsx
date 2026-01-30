@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Notification } from '../types';
 import { apiClient } from '../services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface NotificationsPanelProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
   onInviteAccepted,
   onNotificationsChange,
 }) => {
+  const { t } = useTranslation();
   const [list, setList] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [actingId, setActingId] = useState<number | null>(null);
@@ -72,21 +74,21 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
     <div className="absolute left-0 right-0 bottom-full mb-1 z-50">
       <div className="rounded-2xl border border-white/10 bg-card-bg shadow-xl overflow-hidden max-h-80 overflow-y-auto">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-          <span className="text-white font-bold text-sm">通知</span>
+          <span className="text-white font-bold text-sm">{t('notifications')}</span>
           <button
             type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-gray-500 hover:bg-white/10 hover:text-white"
-            aria-label="閉じる"
+            aria-label={t('close')}
           >
             <span className="material-symbols-outlined text-lg">close</span>
           </button>
         </div>
         <div className="p-2">
           {loading ? (
-            <p className="text-gray-500 text-sm py-6 text-center">読み込み中...</p>
+            <p className="text-gray-500 text-sm py-6 text-center">{t('loading')}</p>
           ) : list.length === 0 ? (
-            <p className="text-gray-500 text-sm py-6 text-center">通知はありません</p>
+            <p className="text-gray-500 text-sm py-6 text-center">{t('noNotifications')}</p>
           ) : (
             <ul className="space-y-1">
               {list.map((n) => (

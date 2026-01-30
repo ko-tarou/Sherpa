@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Task } from '../types';
 import { apiClient } from '../services/api';
 import { formatDeadline } from '../utils/dateUtils';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TaskCardProps {
   tasks: Task[];
@@ -13,6 +13,7 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading, onViewAll }) => {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAiGeneration = async () => {
@@ -49,7 +50,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading
       <div className="flex items-center justify-between mb-8">
         <h3 className="text-2xl font-black flex items-center gap-3">
           <span className="material-symbols-outlined text-primary text-3xl">priority_high</span>
-          最優先タスク
+          {t('topPriority')}
         </h3>
         <div className="flex gap-4 items-center">
             <button 
@@ -58,23 +59,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ tasks, eventTitle, eventId, loading
                 className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-all flex items-center gap-1"
             >
                 <span className="material-symbols-outlined text-sm">{isGenerating ? 'sync' : 'auto_awesome'}</span>
-                {isGenerating ? '生成中...' : 'AIタスク提案'}
+                {isGenerating ? t('generating') : t('aiTaskSuggestion')}
             </button>
             <button
               type="button"
               onClick={onViewAll}
               className="text-sm font-bold text-gray-500 hover:text-primary transition-colors"
             >
-              すべて見る
+              {t('viewAll')}
             </button>
         </div>
       </div>
       
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">読み込み中...</div>
+          <div className="text-center py-8 text-gray-500">{t('loading')}</div>
         ) : tasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">タスクがありません</div>
+          <div className="text-center py-8 text-gray-500">{t('noTasks')}</div>
         ) : (
           tasks.map((task) => (
           <div 

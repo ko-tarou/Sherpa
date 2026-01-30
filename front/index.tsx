@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { LangProvider } from './contexts/LangContext';
 import App from './App';
 
 const rootElement = document.getElementById('root');
@@ -11,7 +12,9 @@ try {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
-      <App />
+      <LangProvider>
+        <App />
+      </LangProvider>
     </React.StrictMode>
   );
 } catch (error) {

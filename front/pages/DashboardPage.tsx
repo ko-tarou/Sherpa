@@ -6,6 +6,7 @@ import BudgetCard from '../components/BudgetCard';
 import { calculateDaysUntil } from '../utils/dateUtils';
 import { getEventStatusLabel } from '../utils/eventStatus';
 import { useTasks } from '../hooks/useTasks';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DashboardPageProps {
   event: Event;
@@ -13,6 +14,7 @@ interface DashboardPageProps {
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ event, onViewAllTasks }) => {
+  const { t, lang } = useTranslation();
   const { tasks, loading: tasksLoading } = useTasks(event.id);
   
   const countdownDays = useMemo(() => {
@@ -94,9 +96,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event, onViewAllTasks }) 
               <span className="material-symbols-outlined text-primary">groups</span>
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-bold">総スタッフ数</p>
+              <p className="text-xs text-gray-500 font-bold">{t('totalStaff')}</p>
               <p className="text-xl font-black">
-                {staffCount} 名
+                {staffCount} {lang === 'ja' ? '名' : ''}
               </p>
             </div>
           </div>
@@ -105,7 +107,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event, onViewAllTasks }) 
               <span className="material-symbols-outlined text-primary">confirmation_number</span>
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-bold">予約済みチケット</p>
+              <p className="text-xs text-gray-500 font-bold">{t('reservedTickets')}</p>
               <p className="text-xl font-black">
                 {/* TODO: ticketsをAPIから取得 */}
                 0 / 0
@@ -117,9 +119,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ event, onViewAllTasks }) 
               <span className="material-symbols-outlined text-primary">shield</span>
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-bold">ステータス</p>
+              <p className="text-xs text-gray-500 font-bold">{t('statusLabel')}</p>
               <p className="text-xl font-black text-green-500">
-                {getEventStatusLabel(event.status)}
+                {getEventStatusLabel(event.status, lang)}
               </p>
             </div>
           </div>

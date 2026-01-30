@@ -1,13 +1,22 @@
 import type { Event } from '../types';
+import type { LangCode } from './language';
+import { t } from './translations';
 
-export const EVENT_STATUS_LABELS: Record<Event['status'], string> = {
-  draft: '下書き',
-  published: '公開済み',
-  ongoing: '開催中',
-  completed: '終了',
-  cancelled: 'キャンセル',
+const STATUS_KEYS: Record<Event['status'], string> = {
+  draft: 'draft',
+  published: 'published',
+  ongoing: 'ongoing',
+  completed: 'ended',
+  cancelled: 'cancelled',
 };
 
-export function getEventStatusLabel(status: Event['status']): string {
-  return EVENT_STATUS_LABELS[status] ?? status;
+export function getEventStatusLabel(status: Event['status'], lang?: LangCode): string {
+  const key = STATUS_KEYS[status];
+  return key ? t(lang ?? 'ja', key) : status;
+}
+
+export function getStatusOptions(lang?: LangCode): { value: Event['status']; label: string }[] {
+  return (['draft', 'published', 'ongoing', 'completed', 'cancelled'] as Event['status'][]).map(
+    (value) => ({ value, label: getEventStatusLabel(value, lang) })
+  );
 }

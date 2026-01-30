@@ -4,31 +4,27 @@ import { useTasks } from '../hooks/useTasks';
 import { formatDeadlineShort, formatCompletedAt, deadlineToDatetimeLocal, toDatetimeLocal } from '../utils/dateUtils';
 import { apiClient } from '../services/api';
 import DateTimePicker from '../components/DateTimePicker';
+import { useTranslation } from '../hooks/useTranslation';
 
 type Status = 'todo' | 'in_progress' | 'completed';
-
-const COLUMNS: { key: Status; label: string; icon: string }[] = [
-  { key: 'todo', label: '未着手', icon: 'radio_button_unchecked' },
-  { key: 'in_progress', label: '進行中', icon: 'adjust' },
-  { key: 'completed', label: '完了', icon: 'check_circle' },
-];
 
 const DeadlineEditor: React.FC<{
   initial: string;
   onSave: (v: string) => void;
   onCancel: () => void;
 }> = ({ initial, onSave, onCancel }) => {
+  const { t } = useTranslation();
   const [v, setV] = useState(initial);
   return (
     <div className="mt-2 flex items-center gap-2 flex-wrap">
       <div className="min-w-0 flex-1">
-        <DateTimePicker value={v} onChange={setV} placeholder="日時を選択" compact />
+        <DateTimePicker value={v} onChange={setV} placeholder={t('selectDateTime')} compact />
       </div>
       <button type="button" onClick={() => onSave(v)} className="text-xs text-primary hover:underline font-bold">
-        保存
+        {t('save')}
       </button>
       <button type="button" onClick={onCancel} className="text-xs text-gray-500 hover:text-white font-bold">
-        キャンセル
+        {t('cancel')}
       </button>
     </div>
   );
@@ -40,6 +36,12 @@ interface TasksPageProps {
 }
 
 const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
+  const { t } = useTranslation();
+  const columns: { key: Status; label: string; icon: string }[] = [
+    { key: 'todo', label: t('todo'), icon: 'radio_button_unchecked' },
+    { key: 'in_progress', label: t('inProgress'), icon: 'adjust' },
+    { key: 'completed', label: t('completed'), icon: 'check_circle' },
+  ];
   const { tasks, loading, createTask, updateTask, deleteTask, reload } = useTasks(eventId);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -189,7 +191,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
     <div className="p-6 md:p-12">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-black text-white">タスク管理</h1>
+          <h1 className="text-3xl font-black text-white">{t('taskManagement')}</h1>
           <div className="flex gap-3">
             <button
               onClick={handleGenerateTasks}
@@ -197,13 +199,13 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
               className="px-4 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-all flex items-center gap-2 text-sm font-bold"
             >
               <span className="material-symbols-outlined text-lg">{isGenerating ? 'sync' : 'auto_awesome'}</span>
-              {isGenerating ? '生成中...' : 'AIタスク生成'}
+              {isGenerating ? t('generating') : t('aiTaskGenerate')}
             </button>
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
               className="px-4 py-2 bg-primary text-white rounded-xl hover:opacity-90 transition-all text-sm font-bold"
             >
-              新規タスク
+              {t('newTask')}
             </button>
           </div>
         </div>
@@ -214,7 +216,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
               type="text"
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="タスク名を入力"
+              placeholder={t('taskPlaceholder')}
               className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-primary"
               onKeyDown={onNewTaskKeyDown}
               onCompositionStart={onNewTaskCompositionStart}
@@ -222,28 +224,28 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
             />
             <div className="mt-3">
               <DateTimePicker
-                label="締め切り"
+                label={t('deadline')}
                 value={newTaskDeadline}
                 onChange={setNewTaskDeadline}
-                placeholder="日時を選択"
+                placeholder={t('selectDateTime')}
               />
             </div>
             <div className="flex gap-2 mt-3">
               <button onClick={handleCreateTask} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold">
-                作成
+                {t('add')}
               </button>
               <button
                 onClick={() => { setShowCreateForm(false); setNewTaskTitle(''); }}
                 className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-sm font-bold"
               >
-                キャンセル
+                {t('cancel')}
               </button>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {COLUMNS.map((col) => {
+          {columns.map((col) => {
             const items = byStatus[col.key];
             const isCompleted = col.key === 'completed';
             const isDropTarget = dropTargetCol === col.key;
@@ -316,7 +318,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                         isDropTarget ? 'border-primary bg-primary/5 text-primary' : 'border-transparent'
                       }`}
                     >
-                      {isDropTarget ? 'ここにドロップ' : 'タスクなし'}
+                      {isDropTarget ? t('dropHere') : t('noTasks')}
                     </div>
                   ) : (
                     items.map((task) => (
@@ -364,10 +366,10 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                 <span className="material-symbols-outlined text-red-400 text-2xl">delete_forever</span>
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-black text-white mb-1">完了タスクの削除</h3>
+                <h3 className="text-lg font-black text-white mb-1">{t('deleteCompleted')}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  完了のタスク <span className="font-bold text-white">{byStatus.completed.length}</span> 件を削除しますか？
-                  この操作は取り消せません。
+                  {t('deleteCompletedConfirm', { count: byStatus.completed.length })}
+                  {t('cannotUndo')}
                 </p>
               </div>
             </div>
@@ -378,7 +380,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                 disabled={clearingCompleted}
                 className="px-4 py-2.5 rounded-xl bg-white/5 text-gray-400 text-sm font-bold hover:bg-white/10 disabled:opacity-50 disabled:pointer-events-none transition-colors"
               >
-                キャンセル
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -387,7 +389,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId }) => {
                 className="px-4 py-2.5 rounded-xl bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 disabled:opacity-50 transition-colors flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-lg">{clearingCompleted ? 'sync' : 'delete'}</span>
-                {clearingCompleted ? '削除中...' : '削除する'}
+                {clearingCompleted ? t('deleting') : t('delete')}
               </button>
             </div>
           </div>

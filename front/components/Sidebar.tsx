@@ -3,6 +3,8 @@ import { NavItemType, Event, User } from '../types';
 import { NotificationsPanel } from './NotificationsPanel';
 import { apiClient } from '../services/api';
 import EventSettingsModal from './EventSettingsModal';
+import UserSettingsModal from './UserSettingsModal';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SidebarProps {
   activeTab: NavItemType;
@@ -34,9 +36,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [settingsEventId, setSettingsEventId] = useState<number | null>(null);
+  const [userSettingsOpen, setUserSettingsOpen] = useState(false);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const eventDropdownRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   const fetchUnreadCount = useCallback(() => {
     apiClient.getUnreadNotificationCount().then((r) => setUnreadCount(r.count)).catch(() => setUnreadCount(0));
@@ -76,11 +80,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     : events[0] ?? null;
 
   const navItems = [
-    { type: NavItemType.DASHBOARD, label: 'ダッシュボード', icon: 'grid_view' },
-    { type: NavItemType.TASKS, label: 'タスク', icon: 'assignment' },
-    { type: NavItemType.BUDGET, label: '予算', icon: 'payments' },
-    { type: NavItemType.TEAM, label: 'チーム', icon: 'groups' },
-    { type: NavItemType.CHAT, label: 'チャット', icon: 'forum' },
+    { type: NavItemType.DASHBOARD, label: t('dashboard'), icon: 'grid_view' },
+    { type: NavItemType.TASKS, label: t('tasks'), icon: 'assignment' },
+    { type: NavItemType.BUDGET, label: t('budget'), icon: 'payments' },
+    { type: NavItemType.TEAM, label: t('team'), icon: 'groups' },
+    { type: NavItemType.CHAT, label: t('chat'), icon: 'forum' },
   ];
 
   return (
@@ -118,14 +122,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             className="flex w-full items-center justify-center gap-2 rounded-xl h-14 bg-primary text-white text-base font-black shadow-[0_0_20px_rgba(225,29,72,0.3)] hover:bg-accent-red transition-all"
           >
             <span className="material-symbols-outlined">add_circle</span>
-            <span>新規イベント作成</span>
+            <span>{t('createEvent')}</span>
           </button>
         </div>
 
         {/* イベント選択 */}
         {events.length > 0 && (
           <div className="px-4 mt-6">
-            <p className="text-xs text-gray-500 font-bold mb-2 px-4">イベント選択</p>
+            <p className="text-xs text-gray-500 font-bold mb-2 px-4">{t('eventSelect')}</p>
             {useCompactEventSelect ? (
               <div ref={eventDropdownRef} className="relative">
                 <div
@@ -149,8 +153,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                       if (currentEvent) setSettingsEventId(currentEvent.id);
                     }}
                     className="p-2 rounded-lg shrink-0 transition-colors hover:bg-white/20"
-                    title="イベント設定"
-                    aria-label="イベント設定"
+                    title={t('eventSettings')}
+                    aria-label={t('eventSettings')}
                   >
                     <span className="material-symbols-outlined text-lg">settings</span>
                   </button>
@@ -209,8 +213,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                           ? 'hover:bg-white/20'
                           : 'hover:bg-white/10 text-gray-400 group-hover:text-white'
                       }`}
-                      title="イベント設定"
-                      aria-label="イベント設定"
+                      title={t('eventSettings')}
+                      aria-label={t('eventSettings')}
                     >
                       <span className="material-symbols-outlined text-lg">settings</span>
                     </button>
@@ -250,7 +254,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               )}
             </span>
-            <p className="text-sm font-medium">通知</p>
+            <p className="text-sm font-medium">{t('notifications')}</p>
           </button>
           <NotificationsPanel
             isOpen={notificationsOpen}
@@ -259,12 +263,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             onNotificationsChange={fetchUnreadCount}
           />
         </div>
-        <button className="flex items-center gap-3 px-4 py-2 text-gray-400 hover:text-white transition-colors">
-          <span className="material-symbols-outlined">settings</span>
-          <p className="text-sm font-medium">設定</p>
-        </button>
-        
-        <div className="mt-4 p-3 bg-white/5 rounded-2xl flex items-center gap-3">
+
+        <button
+          type="button"
+          onClick={() => setUserSettingsOpen(true)}
+          className="mt-4 p-3 w-full bg-white/5 rounded-2xl flex items-center gap-3 text-left hover:bg-white/10 transition-colors cursor-pointer"
+        >
           <div className="size-10 rounded-full border border-white/20 flex items-center justify-center bg-primary/20 overflow-hidden shrink-0">
             {user.avatar_url ? (
               <img src={user.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
@@ -277,13 +281,22 @@ const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
           </div>
           <button
-            onClick={onLogout}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-white/5 hover:text-white transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLogout();
+            }}
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-white/5 hover:text-white transition-colors shrink-0"
             title="ログアウト"
           >
             <span className="material-symbols-outlined text-lg">logout</span>
           </button>
-        </div>
+        </button>
+
+        <UserSettingsModal
+          isOpen={userSettingsOpen}
+          onClose={() => setUserSettingsOpen(false)}
+        />
       </div>
     </aside>
   );
