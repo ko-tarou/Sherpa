@@ -35,6 +35,8 @@ func GetEvent(c *gin.Context) {
 	if err := database.DB.Preload("Organization").
 		Preload("EventStaffs.User").
 		Preload("Tasks").
+		Preload("Tasks.Assignees").
+		Preload("Tasks.Assignees.User").
 		Preload("Budgets").
 		First(&event, uint(id)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})

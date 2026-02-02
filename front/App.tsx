@@ -243,7 +243,7 @@ function EventMainContent({
         />
       );
     case NavItemType.TASKS:
-      return <TasksPage eventId={validEventId} eventTitle={event.title} />;
+      return <TasksPage eventId={validEventId} event={event} eventTitle={event.title} />;
     case NavItemType.BUDGET:
       return <BudgetPage eventId={validEventId} event={event} onBudgetsChange={reloadEvent} />;
     case NavItemType.TEAM:

@@ -34,17 +34,35 @@ export interface Event {
   event_staffs?: EventStaff[];
 }
 
+export interface TaskAssignee {
+  task_id: number;
+  user_id: number;
+  user?: User;
+}
+
+export interface RecurrenceRule {
+  type: 'weekly' | 'daily' | 'monthly';
+  weekdays?: number[];  // 0=日..6=土
+  start_time?: string;  // "09:00"
+  end_time?: string;    // "17:00"
+}
+
 export interface Task {
   id: number;
   event_id: number;
   assignee_id?: number;
   title: string;
+  link?: string;
+  links?: string[];
+  start_at?: string;
   deadline: string;
+  recurrence?: RecurrenceRule;
   status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
   is_ai_generated: boolean;
   created_at: string;
   updated_at: string;
   assignee?: User;
+  assignees?: TaskAssignee[];
 }
 
 export interface Budget {

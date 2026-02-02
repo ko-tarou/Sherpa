@@ -115,6 +115,21 @@ export const translations: Record<LangCode, Record<string, string>> = {
     addTaskForDay: 'この日にタスクを追加',
     viewInTasks: 'タスク画面で見る',
     eventSchedule: 'イベント開催',
+
+    // Task detail
+    taskDetail: 'タスク詳細',
+    link: 'リンク',
+    linkPlaceholder: 'https://...',
+    addLink: 'リンクを追加',
+    assignees: '担当者',
+    startDate: '開始日',
+    recurrence: '周期',
+    recurrenceWeekly: '毎週',
+    recurrenceDaily: '毎日',
+    recurrenceMonthly: '毎月',
+    weekdays: '曜日',
+    sun: '日', mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土',
+    noAssignees: '担当可能なメンバーがいません',
   },
   en: {
     // Common
@@ -232,6 +247,21 @@ export const translations: Record<LangCode, Record<string, string>> = {
     addTaskForDay: 'Add task for this day',
     viewInTasks: 'View in Tasks',
     eventSchedule: 'Event',
+
+    // Task detail
+    taskDetail: 'Task Details',
+    link: 'Link',
+    linkPlaceholder: 'https://...',
+    addLink: 'Add link',
+    assignees: 'Assignees',
+    startDate: 'Start date',
+    recurrence: 'Recurrence',
+    recurrenceWeekly: 'Weekly',
+    recurrenceDaily: 'Daily',
+    recurrenceMonthly: 'Monthly',
+    weekdays: 'Weekdays',
+    sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
+    noAssignees: 'No assignable members',
   },
 };
 

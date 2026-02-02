@@ -83,6 +83,7 @@ func AutoMigrate() error {
 		&models.EventInvitation{},
 		&models.Notification{},
 		&models.Task{},
+		&models.TaskAssignee{},
 		&models.Budget{},
 		&models.Meeting{},
 		&models.Ticket{},

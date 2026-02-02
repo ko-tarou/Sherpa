@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Task } from '../types';
+import { Task, Event } from '../types';
 import { useTasks } from '../hooks/useTasks';
 import { formatDeadlineShort, formatCompletedAt, deadlineToDatetimeLocal, toDatetimeLocal } from '../utils/dateUtils';
 import { apiClient } from '../services/api';
 import DateTimePicker from '../components/DateTimePicker';
 import TasksPageSkeleton from '../components/TasksPageSkeleton';
 import AITaskGenerateModal from '../components/AITaskGenerateModal';
+import TaskDetailModal from '../components/TaskDetailModal';
 import { useTranslation } from '../hooks/useTranslation';
 
 type Status = 'todo' | 'in_progress' | 'completed';
@@ -106,10 +107,11 @@ const TitleEditDialog: React.FC<{
 
 interface TasksPageProps {
   eventId: number;
+  event: Event;
   eventTitle: string;
 }
 
-const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
+const TasksPage: React.FC<TasksPageProps> = ({ eventId, event, eventTitle }) => {
   const { t } = useTranslation();
   const columns: { key: Status; label: string; icon: string }[] = [
     { key: 'todo', label: t('todo'), icon: 'radio_button_unchecked' },
@@ -119,6 +121,9 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
   const { tasks, loading, createTask, updateTask, deleteTask, reload } = useTasks(eventId);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskLink, setNewTaskLink] = useState('');
+  const [newTaskStartAt, setNewTaskStartAt] = useState('');
+  const [newTaskAssigneeIds, setNewTaskAssigneeIds] = useState<number[]>([]);
   const [newTaskDeadline, setNewTaskDeadline] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -133,6 +138,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
   const [clearingCompleted, setClearingCompleted] = useState(false);
   const [showClearCompletedConfirm, setShowClearCompletedConfirm] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
+  const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
   const isComposingRef = useRef(false);
   const newTaskInputRef = useRef<HTMLInputElement>(null);
 
@@ -216,10 +222,16 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
     const deadline = newTaskDeadline ? new Date(newTaskDeadline).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await createTask({
       title: newTaskTitle.trim(),
+      link: newTaskLink.trim() || undefined,
+      start_at: newTaskStartAt ? new Date(newTaskStartAt).toISOString() : undefined,
       deadline,
       status: 'todo',
+      assignee_ids: newTaskAssigneeIds.length > 0 ? newTaskAssigneeIds : undefined,
     });
     setNewTaskTitle('');
+    setNewTaskLink('');
+    setNewTaskStartAt('');
+    setNewTaskAssigneeIds([]);
     const d = new Date();
     d.setDate(d.getDate() + 7);
     d.setHours(23, 59, 0, 0);
@@ -294,6 +306,22 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
               onCompositionEnd={onNewTaskCompositionEnd}
             />
             <div className="mt-3">
+              <label className="block text-sm font-bold text-gray-400 mb-1">{t('link')}</label>
+              <input
+                type="url"
+                value={newTaskLink}
+                onChange={(e) => setNewTaskLink(e.target.value)}
+                placeholder={t('linkPlaceholder')}
+                className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <DateTimePicker
+                label={t('startDate')}
+                value={newTaskStartAt}
+                onChange={setNewTaskStartAt}
+                placeholder={t('selectDateTime')}
+              />
               <DateTimePicker
                 label={t('deadline')}
                 value={newTaskDeadline}
@@ -301,12 +329,34 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
                 placeholder={t('selectDateTime')}
               />
             </div>
+            {(event.event_staffs?.length ?? 0) > 0 && (
+              <div className="mt-3">
+                <label className="block text-sm font-bold text-gray-400 mb-1">{t('assignees')}</label>
+                <div className="flex flex-wrap gap-1">
+                  {(event.event_staffs ?? []).map((s) => {
+                    const uid = s.user_id;
+                    const name = s.user?.name ?? `User ${uid}`;
+                    const sel = newTaskAssigneeIds.includes(uid);
+                    return (
+                      <button
+                        key={uid}
+                        type="button"
+                        onClick={() => setNewTaskAssigneeIds((prev) => sel ? prev.filter((id) => id !== uid) : [...prev, uid])}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold ${sel ? 'bg-primary text-white' : 'bg-white/10 text-gray-400'}`}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="flex gap-2 mt-3">
               <button onClick={handleCreateTask} className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold">
                 {t('add')}
               </button>
               <button
-                onClick={() => { setShowCreateForm(false); setNewTaskTitle(''); }}
+                onClick={() => { setShowCreateForm(false); setNewTaskTitle(''); setNewTaskLink(''); setNewTaskStartAt(''); setNewTaskAssigneeIds([]); }}
                 className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-sm font-bold"
               >
                 {t('cancel')}
@@ -416,6 +466,7 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
                         onDeadlineSave={(v) => handleDeadlineChange(task, v)}
                         onDeadlineCancel={() => setEditingDeadlineId(null)}
                         onTitleEdit={() => setEditingTitleId(task.id)}
+                        onDetailClick={() => setDetailTaskId(task.id)}
                       />
                     ))
                   )}
@@ -434,6 +485,21 @@ const TasksPage: React.FC<TasksPageProps> = ({ eventId, eventTitle }) => {
             task={task}
             onSave={(v) => handleTitleChange(task, v)}
             onCancel={() => setEditingTitleId(null)}
+          />
+        ) : null;
+      })()}
+
+      {detailTaskId != null && (() => {
+        const task = tasks.find((t) => t.id === detailTaskId);
+        return task ? (
+          <TaskDetailModal
+            key={detailTaskId}
+            task={task}
+            event={event}
+            onSave={async (data) => {
+              await updateTask(task.id, { ...task, ...data });
+            }}
+            onClose={() => setDetailTaskId(null)}
           />
         ) : null;
       })()}
@@ -514,6 +580,7 @@ interface TaskKanbanCardProps {
   onDeadlineSave: (localValue: string) => void;
   onDeadlineCancel: () => void;
   onTitleEdit: () => void;
+  onDetailClick: () => void;
 }
 
 const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
@@ -535,6 +602,7 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
   onDeadlineSave,
   onDeadlineCancel,
   onTitleEdit,
+  onDetailClick,
 }) => {
   const { label, isDueToday, isOverdue } = formatDeadlineShort(task.deadline);
   const isEditing = editingDeadline || editingTitle || menuOpen;
@@ -550,14 +618,45 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
       onDrop={onDrop}
     >
       <div className="flex items-start justify-between gap-2">
-        <span
-          className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold ${
-            isCompleted ? 'bg-gray-600 text-gray-300' : task.is_ai_generated ? 'bg-primary/30 text-primary' : 'bg-white/10 text-gray-400'
-          }`}
-        >
-          {isCompleted ? 'COMPLETED' : task.is_ai_generated ? 'AI' : '通常'}
-        </span>
+        <div className="flex items-center gap-1 min-w-0 flex-1">
+          <span
+            className={`shrink-0 px-2 py-0.5 rounded text-xs font-bold ${
+              isCompleted ? 'bg-gray-600 text-gray-300' : task.is_ai_generated ? 'bg-primary/30 text-primary' : 'bg-white/10 text-gray-400'
+            }`}
+          >
+            {isCompleted ? 'COMPLETED' : task.is_ai_generated ? 'AI' : '通常'}
+          </span>
+          {(task.link || (task.links && task.links.length > 0)) && (
+            <a
+              href={task.link || task.links?.[0]}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 p-1 rounded text-gray-500 hover:text-primary hover:bg-white/10"
+              aria-label="リンク"
+            >
+              <span className="material-symbols-outlined text-base">link</span>
+            </a>
+          )}
+        </div>
         <div className="flex items-center gap-1 shrink-0">
+          {(task.assignees?.length ?? 0) > 0 && (
+            <div className="flex -space-x-2">
+              {task.assignees!.slice(0, 3).map((a) => (
+                <div
+                  key={a.user_id}
+                  className="size-6 rounded-full bg-primary/30 border-2 border-white/10 flex items-center justify-center text-xs font-bold text-white overflow-hidden"
+                  title={a.user?.name}
+                >
+                  {a.user?.avatar_url ? (
+                    <img src={a.user.avatar_url} alt="" className="size-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    (a.user?.name?.[0] ?? '?')
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           {isCompleted && <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>}
           <button
             onClick={(e) => { e.stopPropagation(); onMenuToggle(); }}
@@ -574,6 +673,14 @@ const TaskKanbanCard: React.FC<TaskKanbanCardProps> = ({
           className="absolute top-10 right-2 z-10 rounded-xl bg-card-bg border border-white/10 shadow-xl py-1 min-w-[140px]"
           onClick={(e) => e.stopPropagation()}
         >
+          <button
+            type="button"
+            onClick={() => { onMenuToggle(); onDetailClick(); }}
+            className="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/10 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-lg">info</span>
+            {t('taskDetail')}
+          </button>
           {columns.filter((c) => c.key !== task.status).map((c) => (
             <button
               key={c.key}
