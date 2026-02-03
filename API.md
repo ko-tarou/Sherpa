@@ -94,13 +94,14 @@ Android アプリおよび Web フロントエンドから共通で利用する 
 
 ### 4.2 認証（Auth）
 
-#### 4.2.1 Google OAuth 開始（ブラウザ/WebView 用）
+#### 4.2.1 Google OAuth 開始（ブラウザ/WebView/Android 用）
 
 | メソッド | パス | 説明 |
 |----------|------|------|
 | GET | `/api/auth/google` | Google ログイン画面へリダイレクト。Cookie で state を保持するため、**ブラウザ/WebView で開く必要あり**（同一オリジンで Cookie が使えること）。 |
 
 - レスポンス: 302 で Google の認証 URL へリダイレクト
+- **Android 用**: `?redirect_uri=sherpa://auth/callback` を付与すると、認証成功後に `sherpa://auth/callback?token=<JWT>` へリダイレクトされる。Android アプリはこの URL を Intent で受信し、トークンを保存して API に `Authorization: Bearer <token>` を付与する。
 
 #### 4.2.2 OAuth コールバック（サーバー側・ブラウザ用）
 
