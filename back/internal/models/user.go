@@ -10,7 +10,7 @@ import (
 type User struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	Name      string         `gorm:"not null" json:"name"`
-	Email     string         `gorm:"uniqueIndex;not null" json:"email"`
+	Email     string         `gorm:"uniqueIndex:users_email_key;not null" json:"email"`
 	AvatarURL *string        `json:"avatar_url,omitempty"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
