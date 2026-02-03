@@ -56,7 +56,7 @@ func Connect() error {
 			dbHost, dbUser, dbName, dbPort, dbSSLMode,
 		)
 	}
-	
+
 	log.Printf("DSN: %s", dsn)
 
 	var err error
@@ -73,7 +73,12 @@ func Connect() error {
 }
 
 // AutoMigrate データベースのマイグレーションを実行
+// 環境変数 SKIP_AUTOMIGRATE=true のときはスキップ（SQLマイグレーションのみ使う場合）
 func AutoMigrate() error {
+	if os.Getenv("SKIP_AUTOMIGRATE") == "true" {
+		log.Println("Skipping AutoMigrate (SKIP_AUTOMIGRATE=true)")
+		return nil
+	}
 	err := DB.AutoMigrate(
 		&models.User{},
 		&models.Organization{},

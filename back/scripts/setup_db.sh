@@ -26,12 +26,12 @@ psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d postgres -tc "SELECT 1 FROM pg_datab
 echo "Database '$DB_NAME' created or already exists"
 
 # マイグレーションの実行
-if [ -f migrations/001_initial_schema.sql ]; then
-    echo "Running migrations..."
-    PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f migrations/001_initial_schema.sql
-    echo "Migrations completed successfully"
-else
-    echo "Warning: Migration file not found"
-fi
+for f in migrations/001_initial_schema.sql migrations/002_task_extensions.sql; do
+    if [ -f "$f" ]; then
+        echo "Running $f..."
+        PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -f "$f"
+        echo "Done: $f"
+    fi
+done
 
 echo "Database setup completed!"
