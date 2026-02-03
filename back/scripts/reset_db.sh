@@ -57,5 +57,20 @@ for f in migrations/001_initial_schema.sql migrations/002_task_extensions.sql; d
   fi
 done
 
+# SQL でスキーマを作るため、GORM の AutoMigrate を無効化（uni_users_email エラー防止）
+if grep -q '^SKIP_AUTOMIGRATE=true' .env 2>/dev/null; then
+  echo "SKIP_AUTOMIGRATE=true already in .env"
+elif grep -q '^SKIP_AUTOMIGRATE=' .env 2>/dev/null; then
+  grep -v '^SKIP_AUTOMIGRATE=' .env > .env.tmp && mv .env.tmp .env
+  echo "" >> .env
+  echo "SKIP_AUTOMIGRATE=true" >> .env
+  echo "Set SKIP_AUTOMIGRATE=true in .env"
+else
+  echo "" >> .env
+  echo "# GORM AutoMigrate をスキップ（SQL マイグレーションのみ使用）" >> .env
+  echo "SKIP_AUTOMIGRATE=true" >> .env
+  echo "Added SKIP_AUTOMIGRATE=true to .env"
+fi
+
 echo ""
 echo "Reset + migrations completed. Start the server with: make dev"
